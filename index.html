@@ -1,0 +1,1060 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>U-15リーグ構造シミュレーター</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#1d2430; --muted:#6b7280; --line:#d6dbe3;
+  --navy:#1f4e78; --navy-ink:#ffffff; --label:#ddebf7;
+  --up:#e2efda; --down:#fce4d6; --adj:#fff2cc; --po:#e4dfec; --kanto:#f8cbad; --new:#d9f2f2; --out:#ececec;
+  --warn:#c00000; --ok:#2e7d32; --accent:#1f4e78;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14171c; --panel:#1d2229; --ink:#e7eaef; --muted:#9aa3af; --line:#353c46;
+    --navy:#2c5d8a; --navy-ink:#ffffff; --label:#24384d;
+    --up:#2b3a24; --down:#45302a; --adj:#463d1e; --po:#38324a; --kanto:#5a3a28; --new:#1f3d3d; --out:#2a2e34;
+    --warn:#ff8a80; --ok:#81c784; --accent:#8bb8e8; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14171c; --panel:#1d2229; --ink:#e7eaef; --muted:#9aa3af; --line:#353c46;
+  --navy:#2c5d8a; --navy-ink:#ffffff; --label:#24384d;
+  --up:#2b3a24; --down:#45302a; --adj:#463d1e; --po:#38324a; --kanto:#5a3a28; --new:#1f3d3d; --out:#2a2e34;
+  --warn:#ff8a80; --ok:#81c784; --accent:#8bb8e8; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Yu Gothic UI","Yu Gothic","Meiryo",system-ui,sans-serif;font-size:14px;line-height:1.5}
+header{background:var(--navy);color:var(--navy-ink);padding:12px 16px}
+header h1{margin:0;font-size:18px}
+header p{margin:2px 0 0;font-size:12px;opacity:.85}
+main{max-width:1200px;margin:0 auto;padding:12px 16px 40px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:12px 0}
+.tabs button{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 14px;border-radius:6px;cursor:pointer;font:inherit}
+.tabs button.on{background:var(--navy);color:var(--navy-ink);border-color:var(--navy)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:12px}
+.card h2{margin:0 0 8px;font-size:15px;color:var(--accent)}
+.card h3{margin:10px 0 6px;font-size:13px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+label.f{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:4px 6px}
+input[type=number]{width:64px}
+button.b{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:4px;padding:4px 10px;cursor:pointer}
+button.b.p{background:var(--navy);color:var(--navy-ink);border-color:var(--navy)}
+button.b.on{outline:2px solid var(--accent)}
+.hint{font-size:12px;color:var(--muted);margin:4px 0}
+.presets{display:flex;gap:6px;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:middle}
+th{background:var(--navy);color:var(--navy-ink);font-weight:600;font-size:12px}
+.tl td{padding:2px 4px}
+.tl{table-layout:fixed}
+.tl input[type=text]{width:100%;min-width:0}
+.tl select{width:100%;font-size:12px;padding:3px 2px}
+.tl col.c-rk{width:30px}.tl col.c-st{width:104px}.tl col.c-op{width:92px}
+.tl .rk{width:28px;text-align:center;color:var(--muted)}
+.tl .ops{white-space:nowrap}
+.tl .ops button{padding:0 5px;margin-right:2px}
+.st-absent input[type=text]{text-decoration:line-through;color:var(--muted)}
+/* 構造図（帯＋カード） */
+:root{ --kz:#4a3f8f; --kzb:#ecebf7; --la:#1f63b5; --lab:#e8f0fb; --lb:#c8323c; --lbb:#fbeaea; --lc:#2e8b3e; --lcb:#e9f5ea; --ld:#5b6573; --ldb:#eef0f3;
+  --card:#ffffff; --t-up:#2e7d32; --t-down:#c62828; --t-adj:#a16207; --t-po:#6a4c93; --t-kanto:#c2410c; --t-new:#0f766e; --pocard:#efe8f8; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --kzb:#25233a; --lab:#1b2838; --lbb:#352022; --lcb:#1d2e21; --ldb:#23272e; --card:#151a20;
+  --t-up:#81c784; --t-down:#ef9a9a; --t-adj:#e6c35c; --t-po:#c3a6ef; --t-kanto:#f0a36b; --t-new:#5fd3c6; --pocard:#2c2540; } }
+:root[data-theme="dark"]{ --kzb:#25233a; --lab:#1b2838; --lbb:#352022; --lcb:#1d2e21; --ldb:#23272e; --card:#151a20;
+  --t-up:#81c784; --t-down:#ef9a9a; --t-adj:#e6c35c; --t-po:#c3a6ef; --t-kanto:#f0a36b; --t-new:#5fd3c6; --pocard:#2c2540; }
+.kz-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--navy);color:var(--navy-ink);border-radius:10px;padding:10px 16px;margin-bottom:10px}
+.kz-head h2{color:var(--navy-ink);margin:0;font-size:20px}
+.kz-head .pill{border:1px solid rgba(255,255,255,.6);border-radius:14px;padding:2px 12px;font-size:13px;margin-left:8px}
+.kz-head .sum{font-size:12px;opacity:.9;text-align:right}
+.band{display:grid;grid-template-columns:120px 1fr;border-radius:10px;overflow:hidden;margin-bottom:8px}
+.band .lead{color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;text-align:center}
+.band .lead b{font-size:40px;line-height:1}
+.band .lead span{font-size:13px;margin-top:4px}
+.band .lead small{font-size:11px;opacity:.9}
+.band .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px}
+.band.b-K .lead{background:var(--kz)} .band.b-K{background:var(--kzb)}
+.band.b-A .lead{background:var(--la)} .band.b-A{background:var(--lab)}
+.band.b-B .lead{background:var(--lb)} .band.b-B{background:var(--lbb)}
+.band.b-C .lead{background:var(--lc)} .band.b-C{background:var(--lcb)}
+.band.b-D .lead{background:var(--ld)} .band.b-D{background:var(--ldb)}
+.band.b-K .lead b{font-size:22px}
+.tcard{background:var(--card);border-radius:8px;padding:6px 10px;border:1px solid var(--line);min-height:56px}
+.tcard .og{font-size:11px;font-weight:700;color:var(--muted)}
+.tcard .nm{font-size:15px;font-weight:700;margin:1px 0}
+.tcard .mv{font-size:11px;font-weight:600}
+.tcard.po{background:var(--pocard);border-color:var(--t-po)}
+.mv.m-up{color:var(--t-up)} .mv.m-down{color:var(--t-down)} .mv.m-adj{color:var(--t-adj)} .mv.m-po{color:var(--t-po)} .mv.m-kanto{color:var(--t-kanto)} .mv.m-new{color:var(--t-new)} .mv.m-stay{color:var(--muted)}
+.tcard.e-up{border-left:4px solid var(--t-up)} .tcard.e-down{border-left:4px solid var(--t-down)} .tcard.e-adj{border-left:4px solid var(--t-adj)} .tcard.e-kanto{border-left:4px solid var(--t-kanto)} .tcard.e-new{border-left:4px solid var(--t-new)} .tcard.po{border-left:4px solid var(--t-po)}
+.band .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px;align-content:flex-start}
+.dchip{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px 10px;font-size:12px}
+.dchip.po{background:var(--pocard);border-color:var(--t-po)}
+.dchip.e-down{border-left:4px solid var(--t-down)} .dchip.e-new{border-left:4px solid var(--t-new)}
+.band.b-X .lead{background:#3f4650} .band.b-X{background:var(--out)}
+.band.b-X .lead b{font-size:20px}
+.pcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:6px 0 10px}
+.pcard{text-align:left;font:inherit;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.pcard.on{border-color:var(--accent);background:var(--label)}
+.pcard .tt{font-weight:700;font-size:14px}
+.pcard .ds{font-size:12px;color:var(--muted);margin:2px 0 6px}
+.pcard ul{margin:0;padding-left:16px;font-size:12px}
+.events{margin:4px 0 8px;padding-left:18px}
+.events li{margin:4px 0}
+.events .how{display:inline-block;background:var(--label);border-radius:4px;padding:0 6px;font-size:12px;margin:0 4px}
+details.adv{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px}
+details.adv summary{cursor:pointer;color:var(--accent);font-weight:600}
+.yearbox{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.groups-bands{display:block}
+.band .cards.edit{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.ecard{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;display:flex;flex-direction:column;gap:3px}
+.ecard .top{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--muted)}
+.ecard .top .ops button{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:4px;padding:0 5px;margin-left:2px;cursor:pointer}
+.ecard input.nm{border:none;border-bottom:1px dashed var(--line);border-radius:0;background:transparent;font-weight:700;font-size:15px;width:100%;padding:2px 0}
+.ecard select{width:100%;font-size:12px;padding:2px}
+.ecard.st-absent input.nm{text-decoration:line-through;color:var(--muted)}
+.ecard.st-absent{background:repeating-linear-gradient(135deg,var(--out) 0 8px,var(--card) 8px 16px);border-color:#8a8f98}
+.ecard.st-decline{background:var(--adj);border-color:var(--t-adj)}
+.ecard.st-down{background:var(--down);border-color:var(--t-down)}
+.ecard.k-down{background:var(--down);border-color:var(--t-down)}
+.ecard.st-absent select,.ecard.st-decline select,.ecard.st-down select,.ecard.k-down select{font-weight:700}
+.stb{display:inline-block;margin-left:6px;padding:0 6px;border-radius:8px;font-size:11px;color:#fff;vertical-align:1px}
+.stb-absent{background:#6b7280} .stb-decline{background:#b7791f} .stb-down{background:#c62828}
+.ecard.st-absent{border-left:4px solid #8a8f98} .ecard.st-decline{border-left:4px solid var(--t-adj)} .ecard.st-down{border-left:4px solid var(--t-down)} .ecard.k-down{border-left:4px solid var(--t-down)}
+.addcard{border:2px dashed var(--line);border-radius:8px;display:flex;flex-direction:column;gap:6px;justify-content:center;align-items:stretch;padding:8px}
+.pastebox{grid-column:1/-1}
+.pastebox textarea{width:100%}
+.band .lead span.sm{font-size:12px;margin-top:2px}
+.psec{margin:10px 0 14px}
+.psec h3{margin:0 0 6px;font-size:14px}
+.psec h3 small{font-weight:400;color:var(--muted);margin-left:8px}
+.pcard{position:relative;display:flex;flex-direction:column;gap:6px}
+.pcard .tt small{font-weight:400;font-size:12px;color:var(--muted);margin-left:6px}
+.pcard .sel{position:absolute;top:8px;right:10px;font-size:11px;font-weight:700;color:var(--accent)}
+.pcard .warn{display:inline-block;margin-left:6px;font-size:11px;color:#fff;background:#c62828;border-radius:8px;padding:0 6px}
+.prow{display:grid;grid-template-columns:50px 1fr;gap:6px;font-size:12px;align-items:start}
+.plab{border-radius:4px;text-align:center;font-weight:700;color:#fff;padding:1px 0;font-size:11px}
+.plab.l-stay{background:#a16207} .plab.l-up{background:#2e7d32} .plab.l-po{background:#6a4c93} .plab.l-down{background:#c62828}
+.pv div{line-height:1.5}
+.pv .none{color:var(--muted)}
+.pcard .res{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:12px}
+.pcard .res b{color:var(--t-down)}
+.legend2{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;margin:6px 0}
+.legend2 i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:4px}
+@media (max-width:760px){ .band{grid-template-columns:70px 1fr} .band .lead b{font-size:28px} .band .cards{grid-template-columns:repeat(2,1fr)} }
+@media print{ .band,.tcard,.kz-head,.dchip{-webkit-print-color-adjust:exact;print-color-adjust:exact} }
+.diagram{display:grid;grid-template-columns:90px repeat(4,1fr);border:1px solid var(--line)}
+.diagram .lg{background:var(--label);font-weight:700;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px solid var(--line);padding:6px;text-align:center}
+.diagram .lg small{font-weight:400;color:var(--muted);font-size:11px}
+.diagram .tm{border:1px solid var(--line);padding:4px 6px;min-height:44px}
+.diagram .tm b{display:block;font-size:13px}
+.diagram .tm span{font-size:11px;color:var(--muted)}
+.diagram .dwide{grid-column:span 4;border:1px solid var(--line);padding:6px;display:flex;flex-wrap:wrap;gap:4px}
+.chip{border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:12px}
+.k-up{background:var(--up)} .k-down{background:var(--down)} .k-adj{background:var(--adj)} .k-po{background:var(--po)} .k-kanto{background:var(--kanto)} .k-new{background:var(--new)} .k-out{background:var(--out)}
+.legend{display:flex;gap:6px;flex-wrap:wrap;font-size:12px;margin-top:6px}
+.legend span{padding:1px 8px;border:1px solid var(--line);border-radius:4px}
+.checks li{margin:2px 0}
+.ok{color:var(--ok)} .ng{color:var(--warn);font-weight:600}
+.badge{display:inline-block;background:var(--label);border-radius:10px;padding:0 8px;font-size:12px;margin-right:4px}
+.hide{display:none}
+.diff td.ch{background:var(--adj)}
+.sv-kpi{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.sv-kpi div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+.sv-kpi b{display:block;font-size:24px;line-height:1.2}
+.sv-kpi span{font-size:12px;color:var(--muted)}
+.sv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.sv-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.sv-card h3{margin:0 0 8px;font-size:15px;color:var(--accent)}
+.sv-bar{display:flex;height:22px;border-radius:6px;overflow:hidden;margin:4px 0 8px;background:var(--bg)}
+.sv-bar i{display:block;height:100%}
+.sv-row{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:start;font-size:13px;margin:6px 0}
+.sv-lab{display:inline-flex;align-items:center;gap:6px;font-weight:700;white-space:nowrap}
+.sv-lab i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.sv-chips{display:flex;flex-wrap:wrap;gap:4px}
+.sv-chip{border:1px solid var(--line);border-radius:12px;padding:0 8px;font-size:12px;background:var(--bg)}
+.sv-chip small{color:var(--muted);margin-left:3px}
+.sv-op{margin:8px 0 12px}
+.sv-op .t{font-size:13px;font-weight:600}
+.sv-op .n{font-size:12px;color:var(--muted)}
+.sv-text{font-size:13px;border-left:3px solid var(--line);padding:2px 8px;margin:6px 0}
+.sv-text b{display:block;font-size:12px;color:var(--muted)}
+.sv-all{overflow-x:auto}
+.sv-all table{font-size:12px;white-space:nowrap}
+.poinfo th:first-child,.poinfo td:first-child{text-align:center}
+.poinfo td:first-child{background:var(--label);font-weight:700}
+.poinfo input{width:100%;border:none;background:transparent;font:inherit;color:var(--ink);padding:4px 2px}
+.poinfo tr.em input{color:var(--warn);font-weight:700}
+.poinfo tr.b input{font-weight:700}
+@media (max-width:700px){
+  .diagram{grid-template-columns:64px repeat(2,1fr)}
+  .diagram .dwide{grid-column:span 2}
+}
+@media print{
+  header,.tabs,.noprint,#tab-input,#tab-teams,#tab-po,#tab-compare,#tab-survey{display:none!important}
+  #tab-result{display:block!important}
+  body{background:#fff;color:#000}
+  .card{border:none;padding:0}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>U-15リーグ 構造シミュレーター</h1>
+  <p>今年の最終順位・関東の結果・脱退や新規チームを入れると、来年度の構造図と入替戦を自動で作ります（山梨県ユース(U-15)リーグ）</p>
+</header>
+<main>
+  <div class="tabs noprint" id="tabs">
+    <button data-tab="teams" class="on">① <span class="y0"></span>年度最終結果</button>
+    <button data-tab="input">② 条件</button>
+    <button data-tab="result">③ <span class="y1"></span>年度構造図</button>
+    <button data-tab="po">④ 入替戦</button>
+    <button data-tab="compare">⑤ 案の比較</button>
+    <button data-tab="survey">⑥ 希望調査</button>
+  </div>
+
+  <!-- ① 条件 -->
+  <section id="tab-input" class="hide">
+    <div class="card">
+      <h2>空いた枠をどう埋めるか</h2>
+      <div id="presets"></div>
+      <details class="adv"><summary>経過を見る</summary><ul class="events" id="events"></ul></details>
+      <details class="adv">
+        <summary>くわしい設定（B・C・Dの埋め方、定員を超えたとき）</summary>
+        <p class="hint">境目ごとに、「チームが抜けてできた空き」と「上がる予定のチームが来なくてできた空き」の埋め方を選べます。</p>
+        <table id="methodTable">
+          <thead><tr><th>境目</th><th>チームが抜けてできた空き</th><th>上がる予定のチームが来ない空き</th><th>入替戦の上限</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <h3>定員を超えたとき</h3>
+        <select id="surplus">
+          <option value="demote">残留したチームの最下位を降格（要項13(3)4)）</option>
+          <option value="cancelUp">昇格してくるチームの最下位を取り消す</option>
+        </select>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2><span class="y1"></span>年度の定員</h2>
+      <div class="row">
+        <label class="f">Aリーグ<input type="number" id="capA" min="2"></label>
+        <label class="f">Bリーグ<input type="number" id="capB" min="2"></label>
+        <label class="f">Cリーグ<input type="number" id="capC" min="2"></label>
+        <span class="hint">Dリーグは残り全部（定員なし）</span>
+      </div>
+      <p class="hint">Bを16にすると、2028年度のB16化の「移行の年」を試せます（足りない分がCから繰り上がります）。</p>
+    </div>
+
+    <div class="card noprint">
+      <h2>保存・読み込み</h2>
+      <div class="row">
+        <button class="b" id="btnReset">2026年度の初期データに戻す</button>
+        <button class="b" id="btnExport">設定をコピー</button>
+        <button class="b" id="btnImportOpen">設定を貼り付けて読み込む</button>
+        <span class="hint" id="ioMsg"></span>
+      </div>
+      <div id="importBox" class="hide" style="margin-top:8px">
+        <textarea id="importText" rows="4" style="width:100%" placeholder="「設定をコピー」でコピーした内容を貼り付け"></textarea>
+        <div class="row" style="margin-top:6px"><button class="b p" id="btnImport">読み込む</button></div>
+      </div>
+      <p class="hint">入力内容はこのブラウザに自動で保存されます。別のPCやブラウザに移すときは「設定をコピー」→ 移した先で「設定を貼り付けて読み込む」を使ってください。</p>
+    </div>
+  </section>
+
+  <!-- ② チーム・順位 -->
+  <section id="tab-teams">
+    <div class="card">
+      <div class="yearbox"><h2 style="margin:0"><span class="y0"></span>年度 最終結果</h2>
+        <label class="f" style="flex-direction:row;align-items:center;gap:6px">年度<input type="number" id="year" min="2020" max="2100" style="width:80px"></label></div>
+      <p class="hint">年度を変えると、画面の「〇年度」がすべて切り替わります（来年は数字を1つ上げて、順位を入れ直すだけ）。上から順位どおりに並べます。「状態」で 不参加・脱退／昇格辞退／降格希望 を選ぶと、結果が自動で変わります。「まとめて貼り付け」は1行1チームで貼り付けると、そのグループの順位を入れ替えます。</p>
+      <div class="groups-bands" id="groups"></div>
+    </div>
+    <div class="card">
+      <h2>新規チーム</h2>
+      <table class="tl"><thead><tr><th>チーム名</th><th>入るリーグ</th><th></th></tr></thead><tbody id="newTeams"></tbody></table>
+      <button class="b" id="btnAddNew" style="margin-top:6px">＋ 新規チームを追加</button>
+    </div>
+  </section>
+
+  <!-- ③ 結果 -->
+  <section id="tab-result" class="hide">
+    <div class="card">
+      <div class="kz-head"><h2><span class="y1"></span>年度 山梨県 U-15サッカーリーグ 構造図<span class="pill" id="verPill"></span></h2><div class="sum" id="summary"></div></div>
+      <div id="diagram"></div>
+      <div class="legend2">
+        <span><i style="background:var(--t-kanto)"></i>関東から</span><span><i style="background:var(--t-up)"></i>昇格</span><span><i style="background:var(--t-down)"></i>降格</span><span><i style="background:var(--t-adj)"></i>繰り上げ</span><span><i style="background:var(--t-po)"></i>入替戦で決まる</span><span><i style="background:var(--t-new)"></i>新規</span>
+        <span class="hint" style="margin:0">カード左上の小さい文字は<span class="y0"></span>年度の成績です</span>
+      </div>
+      <p class="hint" id="leaving"></p>
+    </div>
+    <div class="card">
+      <h2>チェック</h2>
+      <ul class="checks" id="checks"></ul>
+    </div>
+    <div class="card">
+      <h2>チームの動き（理由つき）</h2>
+      <table><thead><tr><th>チーム</th><th>今年</th><th>来年度</th><th>理由</th></tr></thead><tbody id="moves"></tbody></table>
+    </div>
+    <div class="noprint row">
+      <input type="text" id="scName" placeholder="案の名前（例：案3＋Cは入替戦）" style="flex:1;min-width:200px">
+      <button class="b p" id="btnSave">この結果を案として保存</button>
+      <span class="hint" id="saveMsg"></span>
+    </div>
+  </section>
+
+  <!-- ④ 入替戦 -->
+  <section id="tab-po" class="hide">
+    <div class="card">
+      <h2>12月の入替戦（<span class="y1"></span>年度に向けて）</h2>
+      <p class="hint" id="poNote"></p>
+      <table><thead><tr><th>境目</th><th>上のリーグ側</th><th></th><th>下のリーグ側</th><th>勝ったら／負けたら</th></tr></thead><tbody id="poList"></tbody></table>
+    </div>
+    <div class="card">
+      <h2>実施要項</h2>
+      <table class="poinfo"><thead><tr><th style="width:150px">項目</th><th>内容</th></tr></thead><tbody id="poInfo"></tbody></table>
+      <p class="hint noprint">内容はその場で書き換えられます（自動で保存）。</p>
+    </div>
+  </section>
+
+  <!-- ⑥ 希望調査 -->
+  <section id="tab-survey" class="hide">
+    <div class="card">
+      <h2>希望調査の結果</h2>
+      <details class="adv" id="svPasteBox" open>
+        <summary>回答を貼り付ける</summary>
+        <p class="hint">スプレッドシートの「回答」シートで、左上の角をクリックして全部選び（Ctrl+A）、コピー（Ctrl+C）して、下に貼り付けてください（Ctrl+V）。回答が増えたら貼り直すだけです。</p>
+        <textarea id="svPaste" rows="5" style="width:100%" placeholder="ここに貼り付け"></textarea>
+        <div class="row" style="margin-top:6px"><button class="b p" id="svLoad">読み込む</button><button class="b" id="svClear">消す</button><button class="b hide" id="svClearYes" style="border-color:var(--warn);color:var(--warn)">本当に消す</button><span class="hint" id="svMsg"></span></div>
+      </details>
+    </div>
+    <div id="svBody"></div>
+  </section>
+
+  <!-- ⑤ 比較 -->
+  <section id="tab-compare" class="hide">
+    <div class="card">
+      <h2>保存した案</h2>
+      <div id="scList"></div>
+      <p class="hint">案によって行き先が違うチームだけを並べます。</p>
+      <div style="overflow-x:auto"><table class="diff" id="diffTable"></table></div>
+    </div>
+  </section>
+</main>
+
+<script>
+'use strict';
+// ───────── 初期データ（2026年度最終順位） ─────────
+const DEFAULT_GROUPS = [
+  { id:'A',  name:'Aリーグ',     league:'A', teams:['FUJI INFINITY U15','ファンタジスタ','Ｕスポーツクラブ','韮崎ＳＣ U15','AAセグンド','RENOVA FC','ALASERIO','甲府東中学校'] },
+  { id:'B',  name:'Bリーグ',     league:'B', teams:['FC Azul','ＦＣラーゴ河口湖','八ヶ岳グランデ','エルドラード','Uスポーツセカンド','FC ZONA','ユナイテッドFC-U15','アロンドラFC'] },
+  { id:'Cu', name:'C上位リーグ', league:'C', teams:['トラベッソ','ヴァンフォーレest','フォルトゥナU-14','ALASERIO U-14','FUJI INFINITY U15B','城南中','韮崎東・韮崎西中'] },
+  { id:'Cl', name:'C下位リーグ', league:'C', teams:['玉穂中','山梨南中','山梨北・笛川中','押原中','甲府南中','敷島中','若草中','韮崎SCJY'] },
+  { id:'D1', name:'D上位①',      league:'D', promo:true, teams:['アバンソ','FC FUEFUKI','長坂・高根・須玉','駿台甲府中','FCラーゴ2nd','アロンドラ2nd','双葉中学校','竜王中'] },
+  { id:'D2', name:'D上位②',      league:'D', promo:true, teams:['笛吹JHS EAST U15','勝沼・塩山','田富中','浅川中','笛吹JHS WESTレッド','玉幡・竜王北','上条中','富竹・笛南'] },
+  { id:'DW', name:'D交流WEST',   league:'D', unranked:true, teams:['FC甲府北','甲府西・南西中','櫛形・八田中','ユナイテッド韮崎FC second','甲府東2nd','白根巨摩中','増穂Glanz SC'] },
+  { id:'DE', name:'D交流EAST',   league:'D', unranked:true, teams:['FC FUEFUKI U14','うえのはらクラブ','河口湖南中','FC Azul 2nd','笛吹JHS EAST U14','笛吹JHS WESTブルー','大月東中'] },
+];
+const DEFAULT_STATUS = { 'RENOVA FC':'absent', 'ヴァンフォーレest':'absent' };
+const DEFAULT_KANTO = [ { name:'ヴァンフォーレ甲府U-15', down:false }, { name:'アメージングアカデミー', down:false }, { name:'フォルトゥナSC', down:true } ];
+// 同じクラブのチーム（同じリーグに入らないかチェック）
+const CLUBS = [
+  ['フォルトゥナSC','フォルトゥナU-14'],['ALASERIO','ALASERIO U-14'],['FUJI INFINITY U15','FUJI INFINITY U15B'],
+  ['Ｕスポーツクラブ','Uスポーツセカンド'],['ＦＣラーゴ河口湖','FCラーゴ2nd'],['アロンドラFC','アロンドラ2nd'],['FC Azul','FC Azul 2nd'],
+  ['ユナイテッドFC-U15','ユナイテッド韮崎FC second'],['甲府東中学校','甲府東2nd'],['FC FUEFUKI','FC FUEFUKI U14'],
+  ['笛吹JHS EAST U15','笛吹JHS EAST U14'],['笛吹JHS WESTレッド','笛吹JHS WESTブルー'],
+];
+
+// 昇降格パターン表（U15リーグ昇降格.pdf）：K=関東, pAB/pBC/pCD=入替戦
+const PAT = {
+  0:{ A:['K','A','A','A','A','A','pAB','pAB'], B:['A','pAB','pAB','B','B','B','pBC','C'], Cu:['B','B','pBC'], Cl:['C','C','C','C','D','D','D','D'], D:['C','C','pCD'] },
+  1:{ A:['K','A','A','A','A','A','pAB','B'],   B:['A','pAB','B','B','B','B','C','C'],     Cu:['B','B'],        Cl:['C','C','C','C','D','D','D','D'], D:['C','C'] },
+  2:{ A:['K','A','A','A','A','pAB','B','B'],   B:['A','pAB','B','B','B','C','C','C'],     Cu:['B','B'],        Cl:['C','C','C','D','D','D','D','D'], D:['C','C'] },
+  3:{ A:['K','A','A','A','pAB','B','B','B'],   B:['A','pAB','B','B','C','C','C','C'],     Cu:['B','B'],        Cl:['C','C','C','D','D','D','D','D'], D:['C','pCD'] },
+};
+const PAT_DEFAULT = { A:'B', B:'C', Cu:'C', Cl:'D', D:'D' };
+const LEAGUES = ['A','B','C','D'];
+const LI = { K:-1, A:0, B:1, C:2, D:3 };
+const NEXT = { A:'B', B:'C', C:'D' };
+const BOUNDS = [ ['AB','A↔B'], ['BC','B↔C'], ['CD','C↔D'] ];
+const METHODS = [
+  ['yoko','降格するはずのチームを残す（要項どおり）'],
+  ['promote','下のリーグの次の順位を上げる'],
+  ['cancelPO','入替戦をやめて、両チームとも上のリーグへ（案1）'],
+  ['downPO','入替戦の相手を、降格するはずのチームに替える（案2）'],
+  ['shiftUp','入替戦に出るはずのチームを自動昇格、次の順位が入替戦へ（案3）'],
+  ['po','入替戦で決める'],
+];
+const MNAME = Object.fromEntries(METHODS);
+// 境目ごとの「案」カード（set の中身を S.methods[境目] に入れる）
+const BOUNDARY_PRESETS = [
+  { b:'AB', title:'Aリーグ', items:[
+    { title:'要項の文言どおり', set:{ w:'yoko' } },
+    { title:'案1', sub:'入替戦なし', set:{ w:'cancelPO' } },
+    { title:'案2', sub:'A8位が入替戦', set:{ w:'downPO' } },
+    { title:'案3', sub:'B3位が入替戦', set:{ w:'shiftUp' } },
+  ]},
+  { b:'BC', title:'Bリーグ', items:[
+    { title:'残す＋上げる', set:{ w:'yoko', d:'promote' } },
+    { title:'要項の文言どおり', sub:'全部残す', set:{ w:'yoko', d:'yoko' } },
+    { title:'Cから上げる', set:{ w:'promote', d:'promote' } },
+    { title:'入替戦', set:{ w:'po', d:'po', max:2 } },
+  ]},
+  { b:'CD', title:'Cリーグ', items:[
+    { title:'残す', sub:'案ア', set:{ w:'yoko', d:'yoko', max:0 } },
+    { title:'Dから上げる', set:{ w:'promote', d:'promote', max:0 } },
+    { title:'1つ残して入替戦', sub:'案エ', set:{ w:'po', d:'promote', max:2 } },
+    { title:'全部入替戦', set:{ w:'po', d:'po', max:9 } },
+  ]},
+];
+const DEFAULT_METHODS = {
+  AB:{ w:'cancelPO', d:'promote', max:2 },
+  BC:{ w:'yoko', d:'promote', max:2 },
+  CD:{ w:'po', d:'promote', max:2 },
+};
+const STATUS = [['normal','通常'],['absent','不参加・脱退'],['decline','昇格辞退'],['down','降格希望']];
+
+// ───────── 状態 ─────────
+const LS_KEY = 'u15sim-v1', LS_SC = 'u15sim-scenarios-v1';
+let S;      // 入力
+let scenarios = [];
+let lastResult = null;
+
+function defaultState(){
+  return {
+    groups: DEFAULT_GROUPS.map(g => ({ id:g.id, teams:g.teams.map(n => ({ name:n, status:DEFAULT_STATUS[n] || 'normal' })) })),
+    year: 2026,
+    poInfo: null,
+    kantoTeams: JSON.parse(JSON.stringify(DEFAULT_KANTO)),
+    newTeams: [],
+    cap: { A:8, B:8, C:16 },
+    methods: JSON.parse(JSON.stringify(DEFAULT_METHODS)),
+    surplus: 'demote',
+  };
+}
+function load(){
+  try { const s = JSON.parse(localStorage.getItem(LS_KEY)); if (s && s.groups) S = s; } catch(e){}
+  if (!S) S = defaultState();
+  if (!S.kantoTeams){ // 旧形式からの移行
+    const down = (S.kanto || []).map(x => x.trim()).filter(Boolean);
+    S.kantoTeams = JSON.parse(JSON.stringify(DEFAULT_KANTO)).map(t => ({ ...t, down: down.includes(t.name) }));
+    down.filter(n => !S.kantoTeams.some(t => t.name === n)).forEach(n => S.kantoTeams.push({ name:n, down:true }));
+    delete S.kanto;
+  }
+  if (!S.year) S.year = 2026;
+  if (!S.poInfo) S.poInfo = null;
+  try { scenarios = JSON.parse(localStorage.getItem(LS_SC)) || []; } catch(e){ scenarios = []; }
+}
+function save(){ try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e){} }
+function saveSc(){ try { localStorage.setItem(LS_SC, JSON.stringify(scenarios)); } catch(e){} }
+const gdef = id => DEFAULT_GROUPS.find(g => g.id === id);
+
+// ───────── 計算エンジン ─────────
+function originLabel(t){
+  if (t.kanto) return '関東2部から';
+  if (t.isNew) return '新規';
+  const r = t.rank;
+  return { A:`A${r}位`, B:`B${r}位`, Cu:`C上位${r}位`, Cl:`C下位${r}位`, D1:`D上位①${r}位`, D2:`D上位②${r}位`, DW:'D交流WEST', DE:'D交流EAST' }[t.group];
+}
+
+function simulate(input){
+  const teams = []; const pos = []; let poSeq = 0;
+  const declineShort = { A:0, B:0, C:0 };
+  // ladder index
+  let ix = 0;
+  const kantoNames = input.kantoTeams.filter(t => t.down && t.name.trim()).map(t => t.name.trim()).slice(0,3);
+  kantoNames.forEach(n => teams.push({ name:n, group:'K', league:'A', rank:0, status:'normal', kanto:true, ix:ix++ }));
+  const order = ['A','B','Cu','Cl'];
+  const byId = Object.fromEntries(input.groups.map(g => [g.id, g]));
+  for (const gid of order) byId[gid].teams.forEach((t,i) => teams.push({ name:t.name, group:gid, league:gdef(gid).league, rank:i+1, status:t.status, ix:ix++ }));
+  const d1 = byId.D1.teams, d2 = byId.D2.teams;
+  for (let i = 0; i < Math.max(d1.length, d2.length); i++){
+    if (d1[i]) teams.push({ name:d1[i].name, group:'D1', league:'D', rank:i+1, status:d1[i].status, ix:ix++ });
+    if (d2[i]) teams.push({ name:d2[i].name, group:'D2', league:'D', rank:i+1, status:d2[i].status, ix:ix++ });
+  }
+  for (const gid of ['DW','DE']) byId[gid].teams.forEach((t,i) => teams.push({ name:t.name, group:gid, league:'D', rank:i+1, status:t.status, ix:ix++ }));
+  input.newTeams.filter(n => n.name.trim()).forEach(n => teams.push({ name:n.name.trim(), group:'NEW', league:n.league, rank:0, status:'normal', isNew:true, ix:ix++ }));
+  teams.forEach(t => { t.reasons = []; t.tag = null; t.po = null; });
+
+  const k = Math.min(3, kantoNames.length);
+  const pat = PAT[k];
+  const events = []; let cur = null;
+  const tag = (t, kind, text, why) => { t.tag = { kind, text }; t.reasons.push(why ? `${text}（${why}）` : text); if (cur && !cur.includes(t)) cur.push(t); };
+
+  // 1. 基本の昇降格
+  const poBuckets = { AB:{u:[],l:[]}, BC:{u:[],l:[]}, CD:{u:[],l:[]} };
+  for (const t of teams){
+    if (t.kanto){ t.dest = 'A'; tag(t,'kanto','関東2部から降格'); continue; }
+    if (t.isNew){ t.dest = t.league; tag(t,'new','新規参加'); continue; }
+    let d;
+    if (t.group === 'DW' || t.group === 'DE') d = 'D';
+    else {
+      const key = (t.group === 'D1' || t.group === 'D2') ? 'D' : t.group;
+      d = pat[key][t.rank-1] || PAT_DEFAULT[key];
+    }
+    if (d.startsWith('p')){
+      const b = d.slice(1); const side = (t.league === b[0]) ? 'u' : 'l';
+      poBuckets[b][side].push(t); t.dest = 'PO';
+    } else {
+      t.dest = d;
+      if (d === 'K') tag(t,'out','関東2部へ昇格');
+      else if (LI[d] < LI[t.league]) tag(t,'up','昇格');
+      else if (LI[d] > LI[t.league]) tag(t,'down','降格');
+    }
+  }
+  for (const [b, bk] of Object.entries(poBuckets)){
+    const u = bk.u.sort((a,c)=>a.ix-c.ix), l = bk.l.sort((a,c)=>a.ix-c.ix);
+    if (u.length === 0){ for (let i = 0; i + 1 < l.length; i += 2) newPO(b, null, l[i], l[i+1]); if (l.length % 2) { l[l.length-1].dest = b[1]; } }
+    else {
+      const n = Math.min(u.length, l.length);
+      for (let i = 0; i < n; i++) newPO(b, u[i], l[n-1-i]);
+      u.slice(n).forEach(t => t.dest = b[0]); l.slice(0, l.length-n).forEach(t => t.dest = b[1]);
+    }
+  }
+  function newPO(b, upper, lower, lower2){
+    const p = { id:++poSeq, b, upper, lower: lower2 ? lower : lower, lower2: lower2 || null };
+    // lower2: 下のリーグ同士の入替戦（例：D上位①3位 対 D上位②3位）
+    if (lower2){ p.upper = lower; p.lower = lower2; p.sameSide = true; }
+    [p.upper, p.lower].forEach(t => { if (t){ t.dest = 'PO'; t.po = p; t.wasPO = true; tag(t,'po','入替戦'); } });
+    pos.push(p); return p;
+  }
+
+  // 2. 状態（不参加・昇格辞退・降格希望）
+  for (const t of teams){
+    if (t.status === 'normal') continue;
+    const up = (dest) => dest !== 'PO' && dest !== 'K' && LI[dest] < LI[t.league];
+    if (t.status === 'absent'){
+      if (t.po){
+        const p = t.po, other = p.upper === t ? p.lower : p.upper;
+        const b = p.b;
+        if (other){
+          other.po = null;
+          if (p.sameSide){ other.dest = b[0]; tag(other,'up','昇格',`入替戦の相手 ${t.name} が不参加`); }
+          else if (other === p.upper){ other.dest = b[0]; tag(other,'adj','残留',`入替戦の相手 ${t.name} が不参加`); }
+          else { other.dest = b[0]; tag(other,'up','昇格',`入替戦の相手 ${t.name} が不参加`); }
+        }
+        pos.splice(pos.indexOf(p),1); t.po = null;
+      } else if (up(t.dest)) declineShort[t.dest]++;
+      t.dest = 'OUT'; tag(t,'out','不参加・脱退'); events.push({ out:true, text:`${t.name}（${originLabel(t)}）` });
+    } else if (t.status === 'decline'){
+      if (t.po && t.po.lower === t && !t.po.sameSide){
+        const p = t.po; p.upper.dest = p.b[0]; p.upper.po = null; tag(p.upper,'adj','残留',`入替戦の相手 ${t.name} が昇格辞退`);
+        pos.splice(pos.indexOf(p),1); t.po = null; t.dest = t.league; tag(t,'adj','残留','昇格辞退');
+      } else if (up(t.dest)){ declineShort[t.dest]++; t.dest = t.league; tag(t,'adj','残留','昇格辞退'); }
+    } else if (t.status === 'down'){
+      if (t.dest === t.league && NEXT[t.league]){ t.dest = NEXT[t.league]; tag(t,'down','降格','降格希望'); }
+    }
+  }
+
+  // 3. 定員に合わせる（上のリーグから順に）
+  const count = L => teams.filter(t => t.dest === L).length + pos.filter(p => p.b[0] === L || p.b[1] === L).length;
+  // 下のリーグのチームで、昇格も入替戦もしないチーム（さらに下へ落ちる予定のチームも含む）
+  const promoCands = (U, Lo) => teams.filter(t => t.league === Lo && t.dest !== 'PO' && t.dest !== 'OUT' && t.dest !== 'K' && LI[t.dest] >= LI[Lo]
+      && !t.isNew && !t.kanto && t.status === 'normal'
+      && (Lo !== 'D' || t.group === 'D1' || t.group === 'D2')).sort((a,c)=>a.ix-c.ix);
+  const downCands = (U, Lo) => teams.filter(t => t.dest === Lo && t.league === U && t.status !== 'down' && !t.isNew).sort((a,c)=>a.ix-c.ix);
+  const firstPO = b => pos.filter(p => p.b === b && !p.sameSide).sort((a,c)=>(a.upper?.ix ?? 999)-(c.upper?.ix ?? 999))[0];
+
+  const ops = {
+    promote(U, Lo, why){ const c = promoCands(U,Lo)[0]; if (!c) return false; c.dest = U; tag(c,'up','繰り上げ昇格',why); return true; },
+    yoko(U, Lo, why){ const c = downCands(U,Lo)[0]; if (!c) return ops.promote(U,Lo,why); c.dest = U; tag(c,'adj','繰り上げ残留',why); return true; },
+    cancelPO(U, Lo, why){
+      const p = firstPO(U+Lo); if (!p) return ops.yoko(U,Lo,why);
+      p.upper.dest = U; p.upper.po = null; tag(p.upper,'adj','繰り上げ残留',why);
+      p.lower.dest = U; p.lower.po = null; tag(p.lower,'up','自動昇格（入替戦なし）',why);
+      pos.splice(pos.indexOf(p),1); return true;
+    },
+    downPO(U, Lo, why){
+      const p = firstPO(U+Lo); if (!p) return ops.cancelPO(U,Lo,why);
+      const d = downCands(U,Lo)[0]; if (!d) return ops.cancelPO(U,Lo,why);
+      p.upper.dest = U; p.upper.po = null; tag(p.upper,'adj','繰り上げ残留',why);
+      p.upper = d; d.dest = 'PO'; d.po = p; tag(d,'po','入替戦',`${why}／自動降格から入替戦へ`); return true;
+    },
+    shiftUp(U, Lo, why){
+      const p = firstPO(U+Lo); if (!p) return ops.promote(U,Lo,why);
+      const c = promoCands(U,Lo)[0]; if (!c) return ops.cancelPO(U,Lo,why);
+      p.lower.dest = U; p.lower.po = null; tag(p.lower,'up','自動昇格（入替戦から繰り上げ）',why);
+      p.lower = c; c.dest = 'PO'; c.po = p; tag(c,'po','入替戦',`${why}／入替戦に繰り上げ`); return true;
+    },
+  };
+  function fill(U, n, method, max, why){
+    if (n <= 0) return;
+    cur = []; const ev = { L:U, n, method, why, teams:cur }; events.push(ev);
+    try { fillCore(U, n, method, max, why); } finally { ev.teams = cur.slice(); cur = null; }
+  }
+  function fillCore(U, n, method, max, why){
+    if (method !== 'po'){ for (let i = 0; i < n; i++) if (!ops[method](U, NEXT[U], why)) break; return; }
+    const Lo = NEXT[U]; const k2 = Math.min(n, max);
+    for (let i = 0; i < n - k2; i++) ops.yoko(U, Lo, why);
+    const downs = downCands(U,Lo).slice(0,k2), ups = promoCands(U,Lo).slice(0,k2);
+    const m = Math.min(downs.length, ups.length);
+    for (let i = 0; i < m; i++){
+      const d = downs[i], u = ups[m-1-i];
+      const p = { id:++poSeq, b:U+Lo, upper:d, lower:u };
+      d.dest = 'PO'; d.po = p; tag(d,'po','入替戦',why);
+      u.dest = 'PO'; u.po = p; tag(u,'po','入替戦',why);
+      pos.push(p);
+    }
+    for (let i = m; i < k2; i++) ops.yoko(U, Lo, why);
+  }
+  const surplus = (L, n) => {
+    for (let i = 0; i < n; i++){
+      if (input.surplus === 'cancelUp'){
+        const c = teams.filter(t => t.dest === L && LI[t.league] > LI[L] && !t.kanto).sort((a,b)=>b.ix-a.ix)[0];
+        if (c){ c.dest = c.league; tag(c,'adj','残留','定員超過で昇格取り消し'); continue; }
+      }
+      const c = teams.filter(t => t.dest === L && !t.kanto).sort((a,b)=>b.ix-a.ix)[0];
+      if (!c) break; c.dest = NEXT[L]; tag(c,'down','降格','定員超過（要項13(3)4)）');
+    }
+  };
+  for (const L of ['A','B','C']){
+    const cap = input.cap[L], m = input.methods[L+NEXT[L]];
+    let n = cap - count(L);
+    if (n > 0){
+      const nd = Math.min(n, declineShort[L]);
+      fill(L, n - nd, m.w, m.max, `${L}リーグの空き（チームが抜けた）`);
+      fill(L, nd, m.d, m.max, `${L}リーグの空き（上がる予定のチームが来ない）`);
+      const left = cap - count(L);
+      if (left > 0) fill(L, left, 'promote', 0, `${L}リーグの空き`);
+    } else if (n < 0){ cur = []; const ev = { L, n:-n, method:'surplus', why:`${L}リーグが定員超過`, teams:cur }; events.push(ev); surplus(L, -n); ev.teams = cur.slice(); cur = null; }
+  }
+
+  return { events, teams, pos, k, counts:{ A:count('A'), B:count('B'), C:count('C'), D:count('D') }, cap:input.cap };
+}
+
+// ───────── 表示 ─────────
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LNAME = { A:'Ａ', B:'Ｂ', C:'Ｃ', D:'Ｄ' };
+function poLabel(p){ return `${p.upper.name} 対 ${p.lower.name}`; }
+
+function render(){
+  save();
+  const R = simulate(S); lastResult = R;
+  const { teams, pos } = R;
+  document.getElementById('verPill').textContent = `関東${R.k}チーム降格Ver.`;
+  document.getElementById('summary').innerHTML =
+    `A ${R.counts.A}／${R.cap.A}　B ${R.counts.B}／${R.cap.B}　C ${R.counts.C}／${R.cap.C}　D ${R.counts.D}<br>12月の入替戦 ${pos.length} 試合`;
+  let html = '';
+  // 関東2部（山梨県チーム）
+  const kStay = S.kantoTeams.filter(t => !t.down && t.name.trim());
+  const kUp = teams.filter(t => t.dest === 'K');
+  const kCards = kStay.map(t => card(`${S.year}年度 関東2部`, t.name, '関東残留', 'stay'))
+    .concat(kUp.map(t => card(originLabel(t), t.name, '関東2部へ昇格', 'up')));
+  html += band('K', '関東2部', `${kCards.length}チーム`, '', kCards.join(''));
+  for (const L of LEAGUES){
+    const list = teams.filter(t => t.dest === L).sort((a,b)=>a.ix-b.ix);
+    const win = pos.filter(p => p.b[0] === L), lose = pos.filter(p => p.b[1] === L);
+    const n = R.counts[L];
+    if (L === 'D'){
+      const chips = list.map(t => `<span class="dchip ${t.tag && (t.tag.kind === 'down' || t.tag.kind === 'new') ? 'e-' + t.tag.kind : ''}" title="${esc(noteOf(t))}">${esc(t.name)}</span>`)
+        .concat(lose.map(p => `<span class="dchip po">入替戦の敗者（${esc(poLabel(p))}）</span>`));
+      html += `<div class="band b-D"><div class="lead"><b>D</b><span>${n}チーム</span></div><div class="chips">${chips.join('')}</div></div>`;
+      continue;
+    }
+    const cards = list.map(t => card(t.kanto ? `${S.year}年度 関東2部` : originLabel(t), t.name, moveText(t), t.tag ? t.tag.kind : 'stay'))
+      .concat(win.map(p => poCard('勝者', p)), lose.map(p => poCard('敗者', p)));
+    html += band(L, L, `${n}チーム`, `（${n}／${R.cap[L]}）`, cards.join(''));
+  }
+  const outT = teams.filter(t => t.dest === 'OUT');
+  if (outT.length) html += band('X', '不参加', `${outT.length}チーム`, '来期参加しない', outT.map(t => card(originLabel(t), t.name, '不参加・脱退', 'stay')).join(''));
+  document.getElementById('diagram').innerHTML = html;
+  renderEvents(R);
+  const out = teams.filter(t => t.dest === 'K' || t.dest === 'OUT');
+  document.getElementById('leaving').textContent = '';
+  // PO list
+  const bname = Object.fromEntries(BOUNDS);
+  document.getElementById('poList').innerHTML = pos.length ? pos.map(p =>
+    `<tr><td>${bname[p.b]}</td><td>${esc(p.upper.name)}<br><small>${esc(originLabel(p.upper))}</small></td><td>対</td><td>${esc(p.lower.name)}<br><small>${esc(originLabel(p.lower))}</small></td><td>勝者 → ${LNAME[p.b[0]]}リーグ<br>敗者 → ${LNAME[p.b[1]]}リーグ</td></tr>`).join('')
+    : '<tr><td colspan="5">入替戦なし</td></tr>';
+  document.getElementById('poNote').textContent = `全部で ${pos.length} 試合。決着がつかない場合はリーグ戦上位チームの勝ち（プレーオフ要綱）。`;
+  // checks
+  const checks = [];
+  for (const L of ['A','B','C']){
+    const ok = R.counts[L] === R.cap[L];
+    checks.push(`<li class="${ok ? 'ok' : 'ng'}">${ok ? '✓' : '✕'} ${LNAME[L]}リーグ ${R.counts[L]}／定員${R.cap[L]}</li>`);
+  }
+  for (const [U, Lo] of [['A','B'],['B','C'],['C','D']]){
+    const autoDown = teams.filter(t => t.league === U && t.dest === Lo && !t.isNew).length;
+    const poN = pos.filter(p => p.b === U+Lo).length;
+    if (autoDown === 0 && poN === 0) checks.push(`<li class="ng">！ ${LNAME[U]}リーグから降格するチームがありません</li>`);
+    else checks.push(`<li class="ok">✓ ${LNAME[U]}→${LNAME[Lo]} 自動降格 ${autoDown}／入替戦 ${poN}</li>`);
+  }
+  const where = t => t.dest === 'PO' ? null : t.dest;
+  for (const pair of CLUBS){
+    const ts = pair.map(n => teams.find(t => t.name === n)).filter(Boolean);
+    if (ts.length === 2 && where(ts[0]) && where(ts[0]) === where(ts[1]) && where(ts[0]) !== 'D' && where(ts[0]) !== 'OUT')
+      checks.push(`<li class="ng">！ 同じクラブが同じリーグ：${esc(ts[0].name)}／${esc(ts[1].name)}（${LNAME[where(ts[0])]}）</li>`);
+    if (ts.length === 2 && where(ts[0]) && where(ts[1]) && where(ts[1]) !== 'OUT' && where(ts[0]) !== 'OUT' && LI[where(ts[1])] < LI[where(ts[0])])
+      checks.push(`<li class="ng">！ セカンドチームがトップより上のリーグ：${esc(ts[1].name)}</li>`);
+  }
+  document.getElementById('checks').innerHTML = checks.join('');
+  // moves
+  const destLabel = t => t.dest === 'PO' ? `入替戦（${t.po.b[0]}／${t.po.b[1]}）` : t.dest === 'K' ? '関東2部' : t.dest === 'OUT' ? '不参加' : `${t.dest}リーグ`;
+  document.getElementById('moves').innerHTML = teams.filter(t => t.reasons.length || t.dest !== t.league)
+    .map(t => `<tr><td>${esc(t.name)}</td><td>${esc(originLabel(t))}</td><td class="${kindClass(t)}">${esc(destLabel(t))}</td><td>${esc(t.reasons.join(' → ') || '')}</td></tr>`).join('');
+  renderCompare();
+}
+function kindClass(t){ return t.tag ? 'k-' + t.tag.kind : ''; }
+function renderEvents(R){
+  const li = [];
+  const outs = R.events.filter(e => e.out).map(e => e.text);
+  const kd = R.teams.filter(t => t.kanto).map(t => t.name);
+  li.push(`<li>関東2部から降格：${kd.length ? esc(kd.join('、')) : 'なし'}（関東${R.k}チーム降格Ver.を使用）</li>`);
+  if (outs.length) li.push(`<li>不参加・脱退：${esc(outs.join('、'))}</li>`);
+  R.events.filter(e => !e.out).forEach(e => {
+    const how = e.method === 'surplus' ? '定員超過の処理' : MNAME[e.method];
+    const who = e.teams.map(t => `${t.name}（${originLabel(t)}）：${t.tag.text}`).join('／') || '（埋められるチームなし）';
+    li.push(`<li><b>${esc(e.why)}</b> ${e.n}つ → <span class="how">${esc(how)}</span>${esc(who)}</li>`);
+  });
+  if (R.events.filter(e => !e.out).length === 0) li.push('<li>空き枠はできていません（パターン表どおり）</li>');
+  document.getElementById('events').innerHTML = li.join('');
+}
+const PO_INFO_DEFAULT = y => [
+  ['日時・会場', `${y}年12月5日（土）　押原公園人工芝`, 'b'],
+  ['対象', '現U-14年代（翌年度のリーグ構成を決める試合なので）', ''],
+  ['試合時間', '70分（35分ハーフ）。決着がつかない場合は、リーグ戦上位チームの勝ち', ''],
+  ['交代', '9名まで・1試合3回まで（ハーフタイムは数えない）', ''],
+  ['メンバー表', `${y}年11月28日（土）までに事務局へ提出`, 'em'],
+  ['参加料', '5,000円（当日支払い）', ''],
+];
+function renderPoInfo(){
+  const rows = S.poInfo || PO_INFO_DEFAULT(S.year);
+  document.getElementById('poInfo').innerHTML = rows.map(([k, v, c], i) =>
+    `<tr class="${c}"><td>${esc(k)}</td><td><input type="text" data-pi="${i}" value="${esc(v)}"></td></tr>`).join('');
+}
+function applyYear(){
+  const y = +S.year || 2026;
+  document.querySelectorAll('.y0').forEach(el => el.textContent = y);
+  document.querySelectorAll('.y1').forEach(el => el.textContent = y + 1);
+  document.getElementById('year').value = y;
+  renderPoInfo();
+}
+function band(L, big, sub, small, inner){
+  return `<div class="band b-${L}"><div class="lead"><b>${big}</b><span>${sub}</span>${small ? `<small>${small}</small>` : ''}</div><div class="cards">${inner}</div></div>`;
+}
+function card(og, name, mv, kind){
+  const k = kind || 'stay';
+  return `<div class="tcard ${k !== 'stay' ? 'e-' + k : ''}"><div class="og">${esc(og)}</div><div class="nm">${esc(name)}</div>${mv ? `<div class="mv m-${k}">${esc(mv)}</div>` : ''}</div>`;
+}
+function poCard(side, p){
+  return `<div class="tcard po"><div class="og">入替戦</div><div class="nm">入替戦の${side}</div><div class="mv m-po">${esc(poLabel(p))}</div></div>`;
+}
+function moveText(t){
+  if (!t.tag) return '';
+  if (t.tag.kind === 'kanto') return '関東2部から降格';
+  if (t.tag.kind === 'new') return '新規参加';
+  return t.tag.text;
+}
+function noteOf(t){ return t.tag && t.tag.kind !== 'kanto' && t.tag.kind !== 'new' ? `${originLabel(t)}・${t.tag.text}` : originLabel(t); }
+
+// ───────── 入力画面 ─────────
+function renderInputs(){
+  ['A','B','C'].forEach(L => document.getElementById('cap'+L).value = S.cap[L]);
+  document.getElementById('surplus').value = S.surplus;
+  const tb = document.querySelector('#methodTable tbody');
+  tb.innerHTML = BOUNDS.map(([b, name]) => {
+    const m = S.methods[b];
+    const sel = (key) => `<select data-b="${b}" data-k="${key}">${METHODS.map(([v,l]) => `<option value="${v}"${m[key] === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
+    return `<tr><td>${name}</td><td>${sel('w')}</td><td>${sel('d')}</td><td><input type="number" min="0" data-b="${b}" data-k="max" value="${m.max}"></td></tr>`;
+  }).join('');
+  renderPresets();
+  applyYear();
+  renderTeams();
+}
+// その案で「空き枠を埋めた」動きを、順位とチーム名の文章にする
+function describe(R, U, Lo){
+  const out = [];
+  const seenPO = new Set();
+  R.events.filter(e => !e.out && e.L === U).forEach(e => e.teams.forEach(t => {
+    const who = `${originLabel(t)}（${t.name}）`;
+    const k = t.tag ? t.tag.kind : '', tx = t.tag ? t.tag.text : '';
+    if (t.dest === 'PO' && t.po){
+      if (seenPO.has(t.po)) return; seenPO.add(t.po);
+      out.push(`${originLabel(t.po.upper)}（${t.po.upper.name}）と${originLabel(t.po.lower)}（${t.po.lower.name}）で入替戦`);
+    } else if (tx === '繰り上げ残留') out.push(`${t.wasPO ? '入替戦予定だった' : '降格予定だった'}${who}が残留`);
+    else if (tx === '繰り上げ昇格') out.push(`${who}が繰り上げ昇格`);
+    else if (tx.startsWith('自動昇格')) out.push(`入替戦予定だった${who}が自動昇格`);
+    else if (k === 'down') out.push(`${who}が降格`);
+    else out.push(`${who}：${tx}`);
+  }));
+  return out;
+}
+function renderPresets(){
+  const isOn = (b, set) => Object.entries(set).every(([k, v]) => S.methods[b][k] === v || (k === 'max' && S.methods[b].w !== 'po' && S.methods[b].d !== 'po'));
+  const lab = t => `${originLabel(t)} ${t.name}`;
+  const row = (cls, label, items, emptyText) =>
+    `<div class="prow"><span class="plab l-${cls}">${label}</span><div class="pv">${items.length ? items.map(x => `<div>${esc(x)}</div>`).join('') : `<div class="none">${emptyText}</div>`}</div></div>`;
+  let html = '';
+  BOUNDARY_PRESETS.forEach((grp, gi) => {
+    const U = grp.b[0], Lo = grp.b[1];
+    const sims = grp.items.map(it => { const inp = JSON.parse(JSON.stringify(S)); Object.assign(inp.methods[grp.b], it.set); return simulate(inp); });
+    const gap = sims[0].events.filter(e => !e.out && e.L === U).reduce((a, e) => a + e.n, 0);
+    html += `<div class="psec"><h3>${grp.title}の空き<small>${gap ? `空き ${gap}` : '空きなし'}</small></h3><div class="pcards">` + grp.items.map((it, i) => {
+      const R = sims[i];
+      const moved = R.events.filter(e => !e.out && e.L === U).flatMap(e => e.teams);
+      const stays = moved.filter(t => t.dest === U && t.tag && t.tag.text === '繰り上げ残留').map(lab);
+      const ups = moved.filter(t => t.dest === U && t.tag && t.tag.kind === 'up').map(lab);
+      const pos = R.pos.filter(p => p.b === U + Lo).map(p => `${originLabel(p.upper)} 対 ${originLabel(p.lower)}`);
+      const downs = R.teams.filter(t => t.league === U && t.dest === Lo && !t.isNew).sort((a, b) => a.ix - b.ix).map(lab);
+      const on = isOn(grp.b, it.set);
+      return `<button class="pcard${on ? ' on' : ''}" data-g="${gi}" data-i="${i}">${on ? '<span class="sel">✓ 選択中</span>' : ''}
+        <div class="tt">${esc(it.title)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}${downs.length || pos.length ? '' : '<span class="warn">降格なし</span>'}</div>
+        ${stays.length ? row('stay', '残留', stays) : ''}${ups.length ? row('up', '昇格', ups) : ''}
+        ${row('po', '入替戦', pos, 'なし')}${row('down', '降格', downs, 'なし')}</button>`;
+    }).join('') + '</div></div>';
+  });
+  document.getElementById('presets').innerHTML = html;
+}
+const GROUP_LOOK = { A:['A','A','Aリーグ'], B:['B','B','Bリーグ'], Cu:['C','C','上位'], Cl:['C','C','下位'], D1:['D','D','上位①'], D2:['D','D','上位②'], DW:['D','D','交流WEST'], DE:['D','D','交流EAST'] };
+function renderTeams(){
+  const kCards = S.kantoTeams.map((t,i) => `<div class="ecard ${t.down ? 'k-down' : ''}">
+      <div class="top"><span>${S.year}年度 関東2部${t.down ? '<span class="stb stb-down">県リーグへ降格</span>' : ''}</span><span class="ops"><button data-k="${i}" data-op="delK" title="削除">✕</button></span></div>
+      <input class="nm" type="text" data-k="${i}" data-f="name" value="${esc(t.name)}" placeholder="チーム名">
+      <select data-k="${i}" data-f="down"><option value="0"${t.down ? '' : ' selected'}>関東残留</option><option value="1"${t.down ? ' selected' : ''}>県リーグへ降格</option></select></div>`).join('');
+  let html = `<div class="band b-K"><div class="lead"><b>関東2部</b><span>${S.kantoTeams.length}チーム</span><small>山梨県チーム</small></div>
+    <div class="cards edit">${kCards}<div class="addcard"><button class="b" data-op="addK">＋ 追加</button><span class="hint" style="margin:0">「県リーグへ降格」の数で関東〇チーム降格Ver.が切り替わります</span></div></div></div>`;
+  html += S.groups.map(g => {
+    const d = gdef(g.id); const [cls, big, label] = GROUP_LOOK[g.id];
+    const cards = g.teams.map((t,i) => `<div class="ecard st-${t.status}">
+        <div class="top"><span>${d.unranked ? label : originLabel({ group:g.id, rank:i+1 })}${t.status !== 'normal' ? `<span class="stb stb-${t.status}">${STATUS.find(x => x[0] === t.status)[1]}</span>` : ''}</span>
+          <span class="ops"><button data-g="${g.id}" data-i="${i}" data-op="up" title="順位を上げる">↑</button><button data-g="${g.id}" data-i="${i}" data-op="dn" title="順位を下げる">↓</button><button data-g="${g.id}" data-i="${i}" data-op="del" title="削除">✕</button></span></div>
+        <input class="nm" type="text" data-g="${g.id}" data-i="${i}" data-f="name" value="${esc(t.name)}">
+        <select data-g="${g.id}" data-i="${i}" data-f="status">${STATUS.map(([v,l]) => `<option value="${v}"${t.status === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>`).join('');
+    return `<div class="band b-${cls}"><div class="lead"><b>${big}</b><span class="sm">${label === 'Aリーグ' || label === 'Bリーグ' ? '' : label}</span><span>${g.teams.length}チーム</span></div>
+      <div class="cards edit">${cards}
+        <div class="addcard"><button class="b" data-g="${g.id}" data-op="add">＋ 追加</button><button class="b" data-g="${g.id}" data-op="paste">まとめて貼り付け</button></div>
+        <div class="pastebox"><textarea class="hide" rows="8" data-paste="${g.id}" placeholder="1行に1チーム、上から順位どおり"></textarea></div>
+      </div></div>`;
+  }).join('');
+  document.getElementById('groups').innerHTML = html;
+  document.getElementById('newTeams').innerHTML = S.newTeams.map((n,i) => `<tr>
+    <td><input type="text" data-n="${i}" data-f="name" value="${esc(n.name)}"></td>
+    <td><select data-n="${i}" data-f="league">${LEAGUES.map(L => `<option${n.league === L ? ' selected' : ''}>${L}</option>`).join('')}</select></td>
+    <td class="ops"><button class="b" data-n="${i}" data-op="delNew">✕</button></td></tr>`).join('') || '<tr><td colspan="3" class="hint">なし</td></tr>';
+}
+
+// ───────── 比較 ─────────
+function snapshot(R){
+  const m = {};
+  R.teams.forEach(t => { m[t.name] = t.dest === 'PO' ? `入替戦（${poLabel(t.po)}）` : t.dest === 'K' ? '関東2部' : t.dest === 'OUT' ? '不参加' : t.dest; });
+  return m;
+}
+function renderCompare(){
+  document.getElementById('scList').innerHTML = scenarios.length
+    ? scenarios.map((s,i) => `<span class="badge">${esc(s.name)} <button class="b" data-sc="${i}" style="padding:0 4px">✕</button></span>`).join('')
+    : '<p class="hint">まだありません。③の画面で「この結果を案として保存」を押してください。</p>';
+  const tbl = document.getElementById('diffTable');
+  if (scenarios.length < 2){ tbl.innerHTML = ''; return; }
+  const names = [...new Set(scenarios.flatMap(s => Object.keys(s.map)))];
+  const diff = names.filter(n => new Set(scenarios.map(s => s.map[n] || '－')).size > 1);
+  tbl.innerHTML = `<thead><tr><th>チーム</th>${scenarios.map(s => `<th>${esc(s.name)}</th>`).join('')}</tr></thead><tbody>` +
+    (diff.length ? diff.map(n => `<tr><td>${esc(n)}</td>${scenarios.map(s => `<td class="ch">${esc(s.map[n] || '－')}</td>`).join('')}</tr>`).join('')
+      : `<tr><td colspan="${scenarios.length+1}">違いはありません</td></tr>`) + '</tbody>';
+}
+
+// ───────── イベント ─────────
+document.getElementById('tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  ['input','teams','result','po','compare','survey'].forEach(t => document.getElementById('tab-'+t).classList.toggle('hide', t !== b.dataset.tab));
+});
+document.getElementById('presets').addEventListener('click', e => {
+  const b = e.target.closest('button.pcard'); if (!b) return;
+  const grp = BOUNDARY_PRESETS[+b.dataset.g];
+  Object.assign(S.methods[grp.b], grp.items[+b.dataset.i].set); renderInputs(); render();
+});
+document.getElementById('poInfo').addEventListener('change', e => {
+  const i = e.target.dataset.pi; if (i === undefined) return;
+  if (!S.poInfo) S.poInfo = PO_INFO_DEFAULT(S.year);
+  S.poInfo[+i][1] = e.target.value; save();
+});
+document.getElementById('year').addEventListener('change', e => { const v = parseInt(e.target.value,10); if (v > 2000){ S.year = v; applyYear(); render(); } });
+['A','B','C'].forEach(L => document.getElementById('cap'+L).addEventListener('input', e => { const v = parseInt(e.target.value,10); if (v > 0){ S.cap[L] = v; render(); } }));
+document.getElementById('surplus').addEventListener('change', e => { S.surplus = e.target.value; render(); });
+document.getElementById('methodTable').addEventListener('change', e => {
+  const el = e.target; const { b, k } = el.dataset; if (!b) return;
+  S.methods[b][k] = k === 'max' ? Math.max(0, parseInt(el.value,10) || 0) : el.value;
+  renderInputs(); render();
+});
+document.getElementById('groups').addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.k !== undefined){
+    const t = S.kantoTeams[+el.dataset.k];
+    if (el.dataset.f === 'down') t.down = el.value === '1'; else t.name = el.value;
+    renderInputs(); render(); return;
+  } const g = S.groups.find(x => x.id === el.dataset.g); if (!g || el.dataset.i === undefined) return;
+  g.teams[+el.dataset.i][el.dataset.f] = el.value; renderInputs(); render();
+});
+document.getElementById('groups').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || !b.dataset.op) return;
+  if (b.dataset.op === 'delK'){ S.kantoTeams.splice(+b.dataset.k,1); renderInputs(); render(); return; }
+  if (b.dataset.op === 'addK'){ S.kantoTeams.push({ name:'', down:false }); renderTeams(); return; }
+  const g = S.groups.find(x => x.id === b.dataset.g); const i = +b.dataset.i; const op = b.dataset.op;
+  if (op === 'up' && i > 0) [g.teams[i-1], g.teams[i]] = [g.teams[i], g.teams[i-1]];
+  else if (op === 'dn' && i < g.teams.length-1) [g.teams[i+1], g.teams[i]] = [g.teams[i], g.teams[i+1]];
+  else if (op === 'del') g.teams.splice(i,1);
+  else if (op === 'add') g.teams.push({ name:'新しいチーム', status:'normal' });
+  else if (op === 'paste'){
+    const ta = document.querySelector(`textarea[data-paste="${g.id}"]`);
+    if (ta.classList.contains('hide')){ ta.value = g.teams.map(t => t.name).join('\n'); ta.classList.remove('hide'); b.textContent = '貼り付けを反映'; return; }
+    const names = ta.value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const old = Object.fromEntries(g.teams.map(t => [t.name, t.status]));
+    g.teams = names.map(n => ({ name:n, status: old[n] || 'normal' }));
+  } else return;
+  renderTeams(); render();
+});
+document.getElementById('btnAddNew').addEventListener('click', () => { S.newTeams.push({ name:'', league:'D' }); renderTeams(); });
+document.getElementById('newTeams').addEventListener('change', e => {
+  const el = e.target; if (el.dataset.n === undefined) return;
+  S.newTeams[+el.dataset.n][el.dataset.f] = el.value; render();
+});
+document.getElementById('newTeams').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.dataset.op !== 'delNew') return;
+  S.newTeams.splice(+b.dataset.n,1); renderTeams(); render();
+});
+document.getElementById('btnSave').addEventListener('click', () => {
+  const name = document.getElementById('scName').value.trim() || `案${scenarios.length+1}`;
+  scenarios.push({ name, map:snapshot(lastResult) }); saveSc(); renderCompare();
+  document.getElementById('scName').value = '';
+  document.getElementById('saveMsg').textContent = `「${name}」として保存しました。⑤で比べられます。`;
+});
+document.getElementById('scList').addEventListener('click', e => {
+  const b = e.target.closest('button[data-sc]'); if (!b) return;
+  scenarios.splice(+b.dataset.sc,1); saveSc(); renderCompare();
+});
+document.getElementById('btnReset').addEventListener('click', e => {
+  const b = e.currentTarget;
+  if (!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = 'もう一度押すと初期データに戻します（保存した案は残ります）'; setTimeout(() => { delete b.dataset.armed; b.textContent = '2026年度の初期データに戻す'; }, 5000); return; }
+  delete b.dataset.armed; b.textContent = '2026年度の初期データに戻す';
+  S = defaultState(); renderInputs(); render();
+});
+document.getElementById('btnExport').addEventListener('click', () => {
+  const txt = JSON.stringify({ input:S, scenarios });
+  const msg = document.getElementById('ioMsg');
+  const fallback = () => { const box = document.getElementById('importBox'); box.classList.remove('hide'); const ta = document.getElementById('importText'); ta.value = txt; ta.select(); msg.textContent = '下の欄の文字を選んだので、Ctrl+C でコピーしてください'; };
+  try { navigator.clipboard.writeText(txt).then(() => { msg.textContent = '設定をコピーしました'; }, fallback); } catch(e){ fallback(); }
+});
+document.getElementById('btnImportOpen').addEventListener('click', () => { document.getElementById('importBox').classList.toggle('hide'); document.getElementById('importText').value = ''; });
+document.getElementById('btnImport').addEventListener('click', () => {
+  const msg = document.getElementById('ioMsg');
+  try {
+    const o = JSON.parse(document.getElementById('importText').value);
+    if (!o.input || !o.input.groups) throw new Error();
+    S = o.input; scenarios = o.scenarios || []; saveSc(); renderInputs(); render();
+    document.getElementById('importBox').classList.add('hide'); msg.textContent = '設定を読み込みました';
+  } catch(err){ msg.textContent = '読み込めませんでした。「設定をコピー」でコピーした内容をそのまま貼り付けてください'; }
+});
+
+// ───────── ⑥ 希望調査 ─────────
+const LS_SV = 'u15sim-survey-v1';
+let SV = null;
+function parseTable(text){
+  const t = text.replace(/\r\n?/g, '\n');
+  const delim = (t.split('\n')[0].includes('\t')) ? '\t' : ',';
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < t.length; i++){
+    const c = t[i];
+    if (q){ if (c === '"'){ if (t[i+1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; continue; }
+    if (c === '"' && cell === '') q = true;
+    else if (c === delim){ row.push(cell); cell = ''; }
+    else if (c === '\n'){ row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ''));
+}
+function loadSurvey(text){
+  const rows = parseTable(text);
+  if (rows.length < 2) throw new Error('見出しと回答が見つかりません');
+  const head = rows[0].map(h => h.trim());
+  if (!head.includes('チーム')) throw new Error('「チーム」の列が見つかりません（見出しの行も一緒にコピーしてください）');
+  const recs = rows.slice(1).map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] || '').trim()]))).filter(r => r['チーム']);
+  const latest = {};
+  recs.forEach(r => { latest[r['チーム']] = r; });   // 後の行（新しい回答）で上書き
+  return { at: new Date().toISOString(), total: recs.length, teams: latest };
+}
+function renderSurvey(){
+  const body = document.getElementById('svBody');
+  if (!SV){ body.innerHTML = '<div class="card"><p class="hint">まだ回答が読み込まれていません。</p></div>'; return; }
+  const all = [...S.kantoTeams.map(t => ({ name:t.name, rec: t.down ? '関東2部から降格' : '関東2部' })),
+    ...S.groups.flatMap(g => g.teams.map((t, i) => ({ name:t.name, rec: gdef(g.id).unranked ? gdef(g.id).name : originLabel({ group:g.id, rank:i+1 }) })))].filter(x => x.name.trim());
+  const answers = Object.values(SV.teams);
+  const answered = all.filter(x => SV.teams[x.name]);
+  const missing = all.filter(x => !SV.teams[x.name]);
+  const extra = answers.filter(a => !all.some(x => x.name === a['チーム']));
+  const chip = a => `<span class="sv-chip">${esc(a['チーム'])}<small>${esc(a['今年の成績'] || '')}</small></span>`;
+  const COL = { good:'#2e7d32', mid:'#a16207', bad:'#c62828', gray:'#8a8f98', blue:'#1f63b5', purple:'#6a4c93' };
+  function block(title, key, order){
+    const groups = order.map(([label, color]) => ({ label, color, items: answers.filter(a => a[key] === label) })).filter(g => g.items.length);
+    const n = groups.reduce((x, g) => x + g.items.length, 0);
+    if (!n) return '';
+    const bar = groups.map(g => `<i style="width:${g.items.length / n * 100}%;background:${g.color}" title="${esc(g.label)} ${g.items.length}"></i>`).join('');
+    const rows = groups.map(g => `<span class="sv-lab"><i style="background:${g.color}"></i>${esc(g.label)} ${g.items.length}</span><div class="sv-chips">${g.items.map(chip).join('')}</div>`).join('');
+    return `<div class="sv-card"><h3>${esc(title)}<span class="hint" style="margin-left:6px;font-weight:400">${n}件</span></h3><div class="sv-bar">${bar}</div><div class="sv-row">${rows}</div></div>`;
+  }
+  function opinion(title, key){
+    const cnt = ['賛成','どちらでも','反対'].map(k => answers.filter(a => a[key] === k).length);
+    const n = cnt.reduce((a, b) => a + b, 0);
+    if (!n) return '';
+    const col = ['#2e7d32', '#8a8f98', '#c62828'];
+    const pct = c => Math.round(c / n * 100);
+    return `<div class="sv-op"><div class="t">${esc(title)}</div><div class="sv-bar">${cnt.map((c, i) => c ? `<i style="width:${c / n * 100}%;background:${col[i]}"></i>` : '').join('')}</div>
+      <div class="n">賛成 ${cnt[0]}（${pct(cnt[0])}%）／どちらでも ${cnt[1]}（${pct(cnt[1])}%）／反対 ${cnt[2]}（${pct(cnt[2])}%）</div></div>`;
+  }
+  const texts = (key, title) => {
+    const list = answers.filter(a => a[key]);
+    if (!list.length) return '';
+    return `<div class="sv-card"><h3>${esc(title)}<span class="hint" style="margin-left:6px;font-weight:400">${list.length}件</span></h3>` +
+      list.map(a => `<div class="sv-text"><b>${esc(a['チーム'])}（${esc(a['今年の成績'] || '')}）</b>${esc(a[key])}</div>`).join('') + '</div>';
+  };
+  const notCont = answers.filter(a => a['参加'] === '脱退' || a['参加'] === '前期は不参加・後期から');
+  const newT = answers.filter(a => a['参加'] === '新規');
+  let h = `<div class="sv-kpi">
+    <div><b>${answered.length}／${all.length}</b><span>回答したチーム</span></div>
+    <div><b style="color:${missing.length ? COL.bad : COL.good}">${missing.length}</b><span>未回答</span></div>
+    <div><b>${notCont.length}</b><span>脱退・前期不参加</span></div>
+    <div><b>${newT.length + extra.filter(a => a['参加'] !== '新規').length}</b><span>新規・一覧にないチーム</span></div>
+  </div>`;
+  if (missing.length) h += `<div class="card"><h2>未回答のチーム（${missing.length}）</h2><div class="sv-chips">${missing.map(x => `<span class="sv-chip">${esc(x.name)}<small>${esc(x.rec)}</small></span>`).join('')}</div></div>`;
+  h += '<div class="sv-grid">';
+  h += block('参加', '参加', [['継続', COL.good], ['関東2部', COL.purple], ['新規', COL.blue], ['前期は不参加・後期から', COL.mid], ['脱退', COL.bad]]);
+  if (notCont.length) h += `<div class="sv-card"><h3>脱退・前期不参加の理由</h3>` + notCont.map(a => `<div class="sv-text"><b>${esc(a['チーム'])}（${esc(a['参加'])}）</b>${esc(a['理由'] || '（理由なし）')}</div>`).join('') + '</div>';
+  h += block('所属の希望', '所属の希望', [['昇格希望', COL.good], ['繰り上げ残留希望', COL.blue], ['特になし', COL.gray], ['昇格辞退', COL.mid], ['降格希望', COL.bad]]);
+  h += block('指導者ライセンス', '指導者ライセンス', [['満たせる', COL.good], ['受講予定', COL.mid], ['難しい', COL.bad]]);
+  h += block('帯同審判（A・B）', '帯同審判', [['3級以上いる', COL.good], ['受講予定', COL.mid], ['いない', COL.bad]]);
+  h += block('CWO', 'CWO', [['置ける', COL.good], ['置く予定', COL.mid], ['説明がほしい', COL.blue]]);
+  h += `<div class="sv-card"><h3>ルール案への意見</h3>${opinion('Bリーグの試合時間を80分にする', 'B80分')}${opinion('選手交代を「1試合3回」にする', '交代3回')}${opinion('Bリーグを16チームにする', 'B16チーム')}</div>`;
+  if (newT.length) h += `<div class="sv-card"><h3>新規チーム</h3>` + newT.map(a => `<div class="sv-text"><b>${esc(a['チーム'])}</b>${esc(a['新規：種類'] || '')}／選手数見込み ${esc(a['新規：選手数見込み'] || '－')}</div>`).join('') + '</div>';
+  h += texts('意見', 'ルール案への理由・意見');
+  h += texts('要望・意見', '要望・意見');
+  h += '</div>';
+  const cols = ['チーム','今年の成績','回答者','メール','電話','参加','所属の希望','指導者ライセンス','帯同審判','CWO','B80分','交代3回','B16チーム','受付日時'];
+  h += `<div class="card" style="margin-top:12px"><details><summary style="cursor:pointer;color:var(--accent);font-weight:600">回答一覧（全チーム・連絡先つき）</summary><div class="sv-all" style="margin-top:8px"><table><thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>` +
+    answers.map(a => `<tr>${cols.map(c => `<td>${esc(a[c] || '')}</td>`).join('')}</tr>`).join('') + '</tbody></table></div></details></div>';
+  body.innerHTML = h;
+}
+document.getElementById('svLoad').addEventListener('click', () => {
+  try {
+    SV = loadSurvey(document.getElementById('svPaste').value);
+    try { localStorage.setItem(LS_SV, JSON.stringify(SV)); } catch(e){}
+    document.getElementById('svMsg').textContent = `${SV.total}件の回答（${Object.keys(SV.teams).length}チーム）を読み込みました`;
+    document.getElementById('svPaste').value = '';
+    document.getElementById('svPasteBox').open = false;
+    renderSurvey();
+  } catch(err){ document.getElementById('svMsg').textContent = '読み込めませんでした：' + err.message; }
+});
+document.getElementById('svClear').addEventListener('click', () => {
+  document.getElementById('svClearYes').classList.toggle('hide');
+});
+document.getElementById('svClearYes').addEventListener('click', () => {
+  document.getElementById('svClearYes').classList.add('hide');
+  SV = null; try { localStorage.removeItem(LS_SV); } catch(e){}
+  document.getElementById('svMsg').textContent = ''; document.getElementById('svPasteBox').open = true; renderSurvey();
+});
+try { SV = JSON.parse(localStorage.getItem(LS_SV)); if (SV) document.getElementById('svPasteBox').open = false; } catch(e){ SV = null; }
+
+load(); renderInputs(); render(); renderSurvey();
+</script>
+</body>
+</html>
