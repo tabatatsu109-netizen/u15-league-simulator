@@ -190,7 +190,9 @@ table.cmp th.on{background:var(--accent);color:var(--bg)}
 .sum-out{display:flex;flex-wrap:wrap;gap:8px}
 .sum-out span{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px}
 .sum-out span b{display:inline-block;font-size:11px;color:#fff;background:#6b7280;border-radius:8px;padding:0 8px;margin-right:8px}
-.mv-cases{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.mv-cases{display:flex;flex-direction:column;gap:6px;margin:4px 0 12px}
+.mv-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mv-lab{width:70px;font-weight:700;font-size:13px}
 .mv-cases button{font:inherit;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 14px;cursor:pointer}
 .mv-cases button.on{border-color:var(--accent);background:var(--label);font-weight:700}
 .mv-title{font-size:20px;font-weight:800;margin:0 0 8px}
@@ -426,7 +428,7 @@ svg.mv-arrows{position:absolute;left:0;top:0;pointer-events:none;overflow:visibl
       <h2>移行表（<span class="y0"></span>年度終了 → <span class="y1"></span>年度開始）</h2>
       <div class="mv-cases" id="mvCases"></div>
       <div id="mvBody"></div>
-      <p class="hint">「A6 or B1」＝入替戦の勝者がA6、敗者がB1。黄色のマスが入替戦です。B・Cの空きの埋め方は②条件の設定どおりです。</p>
+      <p class="hint">「A6 or B1」＝入替戦の勝者がA6、敗者がB1。黄色のマスが入替戦です。ここで選んだ埋め方は②条件・③構造図・④入替戦にも反映されます。</p>
     </div>
   </section>
 
@@ -1235,13 +1237,13 @@ function renderCmp(){ const el = document.getElementById('cmpTable'); if (el) el
 let mvCase = null;
 function renderMove(){
   const box = document.getElementById('mvBody'); if (!box) return;
+  const isSel = (b, set) => Object.entries(set).every(([k, v]) => S.methods[b][k] === v || (k === 'max' && S.methods[b].w !== 'po' && S.methods[b].d !== 'po'));
+  document.getElementById('mvCases').innerHTML = BOUNDARY_PRESETS.map((grp, gi) =>
+    `<div class="mv-row"><span class="mv-lab">${grp.title}</span>` + grp.items.map((it, i) =>
+      `<button type="button" data-g="${gi}" data-mv="${i}" class="${isSel(grp.b, it.set) ? 'on' : ''}">${esc(it.title)}${it.sub ? `（${esc(it.sub)}）` : ''}</button>`).join('') + '</div>').join('');
   const g = BOUNDARY_PRESETS[0];
-  const curIdx = g.items.findIndex(it => S.methods.AB.w === it.set.w);
-  const idx = mvCase === null ? Math.max(0, curIdx) : Math.min(mvCase, g.items.length - 1);
-  document.getElementById('mvCases').innerHTML = g.items.map((it, i) =>
-    `<button type="button" data-mv="${i}" class="${i === idx ? 'on' : ''}">${esc(it.title)}${it.sub ? `（${esc(it.sub)}）` : ''}${i === curIdx ? ' ✓' : ''}</button>`).join('');
-  const inp = JSON.parse(JSON.stringify(S)); Object.assign(inp.methods.AB, g.items[idx].set);
-  const R = simulate(inp);
+  const idx = Math.max(0, g.items.findIndex(it => isSel('AB', it.set)));
+  const R = lastResult;
   // 来年度の番号：残るチーム・入替戦(上側の順位の位置)・上がってくるチームの順。C↔Dの入替戦は番号なしで最後
   const slot = {};
   for (const L of ['A','B','C']){
@@ -1328,7 +1330,9 @@ function drawMoveArrows(){
 window.addEventListener('resize', () => requestAnimationFrame(drawMoveArrows));
 document.getElementById('mvCases').addEventListener('click', e => {
   const b = e.target.closest('button[data-mv]'); if (!b) return;
-  mvCase = +b.dataset.mv; renderMove();
+  const grp = BOUNDARY_PRESETS[+b.dataset.g];
+  Object.assign(S.methods[grp.b], grp.items[+b.dataset.mv].set);
+  renderInputs(); render();
 });
 
 function renderSummary(){
