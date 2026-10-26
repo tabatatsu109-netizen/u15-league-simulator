@@ -145,6 +145,12 @@ details.adv summary{cursor:pointer;color:var(--accent);font-weight:600}
 .basebox .bi{display:inline-flex;align-items:center;gap:6px;font-size:13px}
 .basebox .bv{font-size:11px;font-weight:700;border-radius:8px;padding:0 8px;color:#fff}
 .bv.b-down{background:#c62828} .bv.b-up{background:#2e7d32} .bv.b-po{background:#6a4c93} .bv.b-stay{background:#6b7280}
+.yoko{margin:4px 0 12px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--bg)}
+.yoko summary{cursor:pointer;font-weight:700;color:var(--accent)}
+.yoko table{margin-top:8px;font-size:13px}
+.yoko th{background:var(--label);color:var(--ink);width:130px;vertical-align:top;white-space:nowrap}
+.yoko th small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.yoko td b{color:var(--ink);background:var(--adj);padding:0 2px;border-radius:2px}
 .pv .none{color:var(--muted)}
 .pcard .res{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:12px}
 .pcard .res b{color:var(--t-down)}
@@ -226,6 +232,18 @@ details.adv summary{cursor:pointer;color:var(--accent);font-weight:600}
   <section id="tab-input" class="hide">
     <div class="card">
       <h2>空いた枠をどう埋めるか</h2>
+      <details class="yoko" open>
+        <summary>要項にはこう書いてある（2026年度 実施要項 13 その他（3）グループ編成）</summary>
+        <table>
+          <tr><th>昇降格の決め方<small>13(3)2)</small></th><td>年間順位（C・Dは後期）による。様々なケースを想定し別に定める（＝昇降格パターン表）。<b>想定外のケースは3種運営部会で決定</b>する。</td></tr>
+          <tr><th>脱退<small>13(3)3)</small></th><td>新規リーグスタート前に脱退チームが出た場合は、<b>降格チームの上位を残留</b>とする。<b>降格チームがない場合は、昇格チームを増やす</b>。想定外のケースは3種運営部会で決定する。</td></tr>
+          <tr><th>昇格辞退<small>13(3)3)</small></th><td><b>上位リーグの降格チーム</b>で「繰り上げ残留希望」の<b>成績上位</b>のチームが残留する。</td></tr>
+          <tr><th>降格希望<small>13(3)3)</small></th><td><b>同じリーグの降格チーム</b>で「繰り上げ残留希望」の<b>成績上位</b>のチームが残留する。<br>※昇格辞退・降格希望で「繰り上げ残留希望」のチームがない場合は、3種運営部会で協議して決める。</td></tr>
+          <tr><th>関東から降格<small>13(3)4)</small></th><td>リーグで残留したチームのうち<b>最下位</b>を下位リーグへ降格。複数グループのときは、降格対象の同順位チームの<b>勝ち点獲得率（勝ち点÷試合数）</b>で決める。</td></tr>
+          <tr><th>順位が並んだとき<small>7(3)</small></th><td>勝点 → ①得失点差 → ②総得点 → ③当該チームの対戦成績 → ④抽選</td></tr>
+        </table>
+        <p class="hint">要項は「降格するはずのチームを、上の順位から残す」が基本です。案1〜案3のように要項の文言と違う埋め方は、「想定外のケースは3種運営部会で決定」によって決めることになります。</p>
+      </details>
       <div id="presets"></div>
       <details class="adv"><summary>経過を見る</summary><ul class="events" id="events"></ul></details>
       <details class="adv">
