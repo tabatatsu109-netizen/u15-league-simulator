@@ -291,6 +291,23 @@ svg.mv-arrows{position:absolute;left:0;top:0;pointer-events:none;overflow:visibl
   #tab-teams .ecard .top{font-size:9px}
   #tab-teams .ecard input.nm{font-size:11.5px;height:auto}
   #tab-teams > .card + .card{display:none!important}
+  #tab-result .card:has(#checks),#tab-result .card:has(#moves){display:none!important}
+  #tab-move .mv-cases,#tab-move .hint{display:none!important}
+  #tab-move .mv-wrap{height:auto!important;overflow:visible}
+  #mvBoard{transform:none!important;zoom:.7}
+  #tab-result .band .cards{grid-template-columns:repeat(4,1fr);gap:5px;padding:6px}
+  #tab-result .tcard{min-height:0;padding:2px 6px}
+  #tab-result .tcard .og,#tab-result .tcard .mv{font-size:9px}
+  #tab-result .kz-head{padding:6px 12px;margin-bottom:6px}
+  #tab-result .kz-head h2{font-size:16px}
+  #tab-result .band .lead span,#tab-result .band .lead small{font-size:10px}
+  #tab-result .band.b-K .lead b,#tab-result .band.b-X .lead b{font-size:15px}
+  #tab-result .band .chips{padding:6px;gap:4px}
+  #tab-result .dchip{font-size:10px;padding:1px 6px}
+  #tab-result .tcard .nm{font-size:12px}
+  #tab-result .band .lead b{font-size:24px}
+  #tab-result .band{grid-template-columns:72px 1fr;margin-bottom:4px}
+  .band,.tcard{break-inside:avoid}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body{background:#fff;color:#000}
   .card{border:none;padding:0}
