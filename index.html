@@ -138,6 +138,7 @@ details.adv summary{cursor:pointer;color:var(--accent);font-weight:600}
 .plab{border-radius:4px;text-align:center;font-weight:700;color:#fff;padding:1px 0;font-size:11px}
 .plab.l-stay{background:#a16207} .plab.l-up{background:#2e7d32} .plab.l-po{background:#6a4c93} .plab.l-down{background:#c62828}
 .pv div{line-height:1.5}
+.pv .was{display:inline-block;margin-left:6px;font-size:11px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:0 6px;white-space:nowrap}
 .pv .none{color:var(--muted)}
 .pcard .res{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:12px}
 .pcard .res b{color:var(--t-down)}
@@ -512,6 +513,11 @@ function simulate(input){
       u.slice(n).forEach(t => t.dest = b[0]); l.slice(0, l.length-n).forEach(t => t.dest = b[1]);
     }
   }
+  // パターン表どおりの「本来」の行き先（空き枠の調整前）
+  teams.forEach(t => {
+    t.base = t.kanto ? '関東から' : t.isNew ? '新規' : t.dest === 'PO' ? (t.po && t.po.upper === t && !t.po.sameSide ? '残留をかけた入替戦' : '昇格をかけた入替戦')
+      : t.dest === 'K' ? '関東2部へ昇格' : LI[t.dest] < LI[t.league] ? '昇格' : LI[t.dest] > LI[t.league] ? '降格' : '残留';
+  });
   function newPO(b, upper, lower, lower2){
     const p = { id:++poSeq, b, upper, lower: lower2 ? lower : lower, lower2: lower2 || null };
     // lower2: 下のリーグ同士の入替戦（例：D上位①3位 対 D上位②3位）
@@ -782,9 +788,10 @@ function describe(R, U, Lo){
 }
 function renderPresets(){
   const isOn = (b, set) => Object.entries(set).every(([k, v]) => S.methods[b][k] === v || (k === 'max' && S.methods[b].w !== 'po' && S.methods[b].d !== 'po'));
-  const lab = t => `${originLabel(t)} ${t.name}`;
+  // now：この行の結果。本来と違うときだけ（本来：〇〇）を小さく出す
+  const lab = (t, now) => `${esc(originLabel(t))} ${esc(t.name)}` + (t.base && !String(now).includes(t.base) && !(now === '入替戦' && t.base.endsWith('入替戦')) ? `<span class="was">本来：${esc(t.base)}</span>` : '');
   const row = (cls, label, items, emptyText) =>
-    `<div class="prow"><span class="plab l-${cls}">${label}</span><div class="pv">${items.length ? items.map(x => `<div>${esc(x)}</div>`).join('') : `<div class="none">${emptyText}</div>`}</div></div>`;
+    `<div class="prow"><span class="plab l-${cls}">${label}</span><div class="pv">${items.length ? items.map(x => `<div>${x}</div>`).join('') : `<div class="none">${emptyText}</div>`}</div></div>`;
   let html = '';
   BOUNDARY_PRESETS.forEach((grp, gi) => {
     const U = grp.b[0], Lo = grp.b[1];
@@ -793,10 +800,10 @@ function renderPresets(){
     html += `<div class="psec"><h3>${grp.title}の空き<small>${gap ? `空き ${gap}` : '空きなし'}</small></h3><div class="pcards">` + grp.items.map((it, i) => {
       const R = sims[i];
       const moved = R.events.filter(e => !e.out && e.L === U).flatMap(e => e.teams);
-      const stays = moved.filter(t => t.dest === U && t.tag && t.tag.text === '繰り上げ残留').map(lab);
-      const ups = moved.filter(t => t.dest === U && t.tag && t.tag.kind === 'up').map(lab);
-      const pos = R.pos.filter(p => p.b === U + Lo).map(p => `${lab(p.upper)} 対 ${lab(p.lower)}`);
-      const downs = R.teams.filter(t => t.league === U && t.dest === Lo && !t.isNew).sort((a, b) => a.ix - b.ix).map(lab);
+      const stays = moved.filter(t => t.dest === U && t.tag && t.tag.text === '繰り上げ残留').map(t => lab(t, '残留'));
+      const ups = moved.filter(t => t.dest === U && t.tag && t.tag.kind === 'up').map(t => lab(t, '昇格'));
+      const pos = R.pos.filter(p => p.b === U + Lo).map(p => `${lab(p.upper, '入替戦')} 対 ${lab(p.lower, '入替戦')}`);
+      const downs = R.teams.filter(t => t.league === U && t.dest === Lo && !t.isNew).sort((a, b) => a.ix - b.ix).map(t => lab(t, '降格'));
       const on = isOn(grp.b, it.set);
       return `<button class="pcard${on ? ' on' : ''}" data-g="${gi}" data-i="${i}">${on ? '<span class="sel">✓ 選択中</span>' : ''}
         <div class="tt">${esc(it.title)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}${downs.length || pos.length ? '' : '<span class="warn">降格なし</span>'}</div>
