@@ -280,11 +280,11 @@ table.mv td.to small{display:block;font-weight:400;font-size:10px;white-space:no
     <button data-tab="input">② 条件</button>
     <button data-tab="result">③ <span class="y1"></span>年度構造図</button>
     <button data-tab="po">④ 入替戦</button>
-    <button data-tab="compare">⑤ 案の比較</button>
-    <button data-tab="summary">⑥ 概要</button>
-    <button data-tab="move">⑦ 移行表</button>
-    <button data-tab="survey">⑧ 希望調査</button>
-    <button type="button" class="present-btn" id="btnPresent">▶ 説明モード</button>
+    <button data-tab="compare" hidden>案の比較</button>
+    <button data-tab="summary" hidden>概要</button>
+    <button data-tab="move">⑤ 移行表</button>
+    <button data-tab="survey" hidden>希望調査</button>
+    <button type="button" class="present-btn" id="btnPresent" hidden>▶ 説明モード</button>
   </div>
 
   <!-- ① 条件 -->
@@ -382,7 +382,7 @@ table.mv td.to small{display:block;font-weight:400;font-size:10px;white-space:no
       <h2>チームの動き（理由つき）</h2>
       <table><thead><tr><th>チーム</th><th>今年</th><th>来年度</th><th>理由</th></tr></thead><tbody id="moves"></tbody></table>
     </div>
-    <div class="noprint row">
+    <div class="noprint row" hidden>
       <input type="text" id="scName" placeholder="案の名前（例：案3＋Cは入替戦）" style="flex:1;min-width:200px">
       <button class="b p" id="btnSave">この結果を案として保存</button>
       <span class="hint" id="saveMsg"></span>
@@ -1044,7 +1044,7 @@ document.getElementById('btnSave').addEventListener('click', () => {
   const name = document.getElementById('scName').value.trim() || `案${scenarios.length+1}`;
   scenarios.push({ name, map:snapshot(lastResult) }); saveSc(); renderCompare();
   document.getElementById('scName').value = '';
-  document.getElementById('saveMsg').textContent = `「${name}」として保存しました。⑤で比べられます。`;
+  document.getElementById('saveMsg').textContent = `「${name}」として保存しました。`;
 });
 document.getElementById('scList').addEventListener('click', e => {
   const b = e.target.closest('button[data-sc]'); if (!b) return;
