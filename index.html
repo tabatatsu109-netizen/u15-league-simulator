@@ -272,10 +272,26 @@ svg.mv-arrows{position:absolute;left:0;top:0;pointer-events:none;overflow:visibl
   .diagram .dwide{grid-column:span 2}
 }
 @media print{
-  header,.tabs,.noprint,#tab-input,#tab-teams,#tab-po,#tab-compare,#tab-survey{display:none!important}
-  #tab-summary{display:block!important}
-  #tab-move{display:block!important}
-  #tab-result{display:block!important}
+  header,.tabs,.noprint,.present-btn,#present{display:none!important}
+  main{max-width:none;padding:0}
+  @page{size:A4 portrait;margin:10mm}
+  :root{--bg:#fff;--panel:#fff;--ink:#000;--muted:#555;--line:#999;--card:#fff;--label:#ddebf7;--sel:#e8f0fb;--kzb:#ecebf7;--lab:#e8f0fb;--lbb:#fbeaea;--lcb:#e9f5ea;--ldb:#eef0f3;--out:#ececec;--adj:#fff2cc;--down:#fce4d6;--t-down:#c62828;--t-adj:#a16207;--accent:#1f4e78;color-scheme:light}
+  /* ①最終結果：操作部品を隠す */
+  #tab-teams .ops,#tab-teams .addcard,#tab-teams .pastebox,#tab-teams .hint,#tab-teams .yearbox label,#tab-teams select{display:none!important}
+  #tab-teams .ecard input.nm{border:none;font-size:13px;padding:0;color:#000}
+  #tab-teams .ecard{padding:4px 8px;break-inside:avoid}
+  #tab-teams .band{break-inside:avoid;margin-bottom:6px}
+  #tab-teams .band .cards.edit{grid-template-columns:repeat(4,1fr);gap:5px;padding:6px}
+  #tab-teams .band{grid-template-columns:76px 1fr}
+  #tab-teams .band .lead{padding:4px}
+  #tab-teams .band .lead b{font-size:24px}
+  #tab-teams .band.b-K .lead b{font-size:15px}
+  #tab-teams .band .lead span,#tab-teams .band .lead small{font-size:10px}
+  #tab-teams .ecard{gap:0;padding:3px 6px}
+  #tab-teams .ecard .top{font-size:9px}
+  #tab-teams .ecard input.nm{font-size:11.5px;height:auto}
+  #tab-teams > .card + .card{display:none!important}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body{background:#fff;color:#000}
   .card{border:none;padding:0}
 }
