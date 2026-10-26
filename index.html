@@ -163,6 +163,7 @@ table.cmp th.on{background:var(--accent);color:var(--bg)}
 .c-up{background:var(--up);font-weight:700} .c-down{background:var(--down);font-weight:700} .c-po{background:var(--po);font-weight:700} .c-stay{background:var(--adj);font-weight:700} .c-out{background:var(--out)}
 .present{position:fixed;inset:0;z-index:50;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;
   padding:max(16px,env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px))}
+[hidden],.present[hidden]{display:none!important}
 .pr-top{display:flex;align-items:center;gap:16px;font-size:14px;color:var(--muted)}
 .pr-top .pr-title{font-weight:700;color:var(--accent)}
 .pr-top button,.pr-nav button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 16px;cursor:pointer}
