@@ -623,6 +623,7 @@ function simulate(input){
   }
   // パターン表どおりの「本来」の行き先（空き枠の調整前）
   teams.forEach(t => {
+    t.baseOpp = t.dest === 'PO' && t.po ? (t.po.upper === t ? t.po.lower : t.po.upper)?.name : null;
     t.base = t.kanto ? '関東から' : t.isNew ? '新規' : t.dest === 'PO' ? (t.po && t.po.upper === t && !t.po.sameSide ? '残留をかけた入替戦' : '昇格をかけた入替戦')
       : t.dest === 'K' ? '関東2部へ昇格' : LI[t.dest] < LI[t.league] ? '昇格' : LI[t.dest] > LI[t.league] ? '降格' : '残留';
   });
@@ -1264,7 +1265,7 @@ function renderMove(){
   const kd = R.teams.filter(t => t.kanto);
   const kTbl = kd.length ? `<table class="mv mv-kanto">${head}<tbody>${kd.map(t => row('関東2部', t)).join('')}</tbody></table>` : '';
   box.innerHTML = `<div class="mv-title">関東リーグ${R.k}チーム県リーグ降格Ver.　／　${esc(g.items[idx].title)}${g.items[idx].sub ? `（${esc(g.items[idx].sub)}）` : ''}</div>
-    <div class="mv-wrap">${kTbl}<div class="mv-grid">${tbl('A',8)}${tbl('B',8)}${tbl('Cu',8)}${tbl('Cl',8)}${tbl('D1',8)}${tbl('D2',8)}</div></div>` + baseBox(new Map(R.teams.filter(t => t.status !== 'absent' && !t.kanto && !t.isNew && outcome(t).k !== baseCls(t.base)).map(t => [t.name, t])), '');
+    <div class="mv-wrap">${kTbl}<div class="mv-grid">${tbl('A',8)}${tbl('B',8)}${tbl('Cu',8)}${tbl('Cl',8)}${tbl('D1',8)}${tbl('D2',8)}</div></div>` + baseBox(new Map(R.teams.filter(t => t.status !== 'absent' && !t.kanto && !t.isNew && (outcome(t).k !== baseCls(t.base) || (t.dest === 'PO' && t.po && (t.po.upper === t ? t.po.lower : t.po.upper).name !== t.baseOpp))).map(t => [t.name, t])), '');
 }
 document.getElementById('mvCases').addEventListener('click', e => {
   const b = e.target.closest('button[data-mv]'); if (!b) return;
