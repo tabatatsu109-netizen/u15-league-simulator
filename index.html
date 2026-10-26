@@ -190,6 +190,21 @@ table.cmp th.on{background:var(--accent);color:var(--bg)}
 .sum-out{display:flex;flex-wrap:wrap;gap:8px}
 .sum-out span{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px}
 .sum-out span b{display:inline-block;font-size:11px;color:#fff;background:#6b7280;border-radius:8px;padding:0 8px;margin-right:8px}
+.mv-cases{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.mv-cases button{font:inherit;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 14px;cursor:pointer}
+.mv-cases button.on{border-color:var(--accent);background:var(--label);font-weight:700}
+.mv-title{font-size:18px;font-weight:700;margin:0 0 8px}
+.mv-wrap{overflow-x:auto}
+.mv-grid{display:grid;grid-template-columns:repeat(6,minmax(250px,1fr));gap:10px;min-width:1530px;align-items:start}
+table.mv{font-size:12px;width:100%;table-layout:fixed}
+table.mv th{background:#555c66;color:#fff;font-weight:600;text-align:center;padding:3px 4px}
+table.mv td{padding:3px 5px;height:28px}
+table.mv td:first-child{text-align:center;white-space:nowrap;width:24%;font-size:11px}
+table.mv td:nth-child(2){line-height:1.25;word-break:break-all}
+table.mv td.to{text-align:center;font-weight:700;width:30%;white-space:nowrap}
+table.mv td.to small{display:block;font-weight:400;font-size:10px;white-space:normal}
+.to.d-K{background:var(--kzb)} .to.d-A{background:var(--lab)} .to.d-B{background:var(--lbb)} .to.d-C{background:var(--lcb)} .to.d-D{background:var(--panel)} .to.d-PO{background:#ffe600;color:#1d2430} .to.d-OUT{background:var(--out);color:var(--muted)}
+.mv-kanto{max-width:340px;margin-bottom:10px}
 .pv .none{color:var(--muted)}
 .pcard .res{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:12px}
 .pcard .res b{color:var(--t-down)}
@@ -247,6 +262,7 @@ table.cmp th.on{background:var(--accent);color:var(--bg)}
 @media print{
   header,.tabs,.noprint,#tab-input,#tab-teams,#tab-po,#tab-compare,#tab-survey{display:none!important}
   #tab-summary{display:block!important}
+  #tab-move{display:block!important}
   #tab-result{display:block!important}
   body{background:#fff;color:#000}
   .card{border:none;padding:0}
@@ -266,7 +282,8 @@ table.cmp th.on{background:var(--accent);color:var(--bg)}
     <button data-tab="po">④ 入替戦</button>
     <button data-tab="compare">⑤ 案の比較</button>
     <button data-tab="summary">⑥ 概要</button>
-    <button data-tab="survey">⑦ 希望調査</button>
+    <button data-tab="move">⑦ 移行表</button>
+    <button data-tab="survey">⑧ 希望調査</button>
     <button type="button" class="present-btn" id="btnPresent">▶ 説明モード</button>
   </div>
 
@@ -395,7 +412,17 @@ table.cmp th.on{background:var(--accent);color:var(--bg)}
     </div>
   </section>
 
-  <!-- ⑦ 希望調査 -->
+  <!-- ⑦ 移行表 -->
+  <section id="tab-move" class="hide">
+    <div class="card">
+      <h2>移行表（<span class="y0"></span>年度終了 → <span class="y1"></span>年度開始）</h2>
+      <div class="mv-cases" id="mvCases"></div>
+      <div id="mvBody"></div>
+      <p class="hint">「A6 or B1」＝入替戦の勝者がA6、敗者がB1。黄色のマスが入替戦です。B・Cの空きの埋め方は②条件の設定どおりです。</p>
+    </div>
+  </section>
+
+  <!-- ⑧ 希望調査 -->
   <section id="tab-survey" class="hide">
     <div class="card">
       <h2>希望調査の結果</h2>
@@ -782,6 +809,7 @@ function render(){
     .map(t => `<tr><td>${esc(t.name)}</td><td>${esc(originLabel(t))}</td><td class="${kindClass(t)}">${esc(destLabel(t))}</td><td>${esc(t.reasons.join(' → ') || '')}</td></tr>`).join('');
   renderCompare();
   renderSummary();
+  renderMove();
 }
 function kindClass(t){ return t.tag ? 'k-' + t.tag.kind : ''; }
 function renderEvents(R){
@@ -956,7 +984,7 @@ function renderCompare(){
 document.getElementById('tabs').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
-  ['input','teams','result','po','compare','summary','survey'].forEach(t => document.getElementById('tab-'+t).classList.toggle('hide', t !== b.dataset.tab));
+  ['input','teams','result','po','compare','summary','move','survey'].forEach(t => document.getElementById('tab-'+t).classList.toggle('hide', t !== b.dataset.tab));
 });
 document.getElementById('presets').addEventListener('click', e => {
   const b = e.target.closest('button.pcard'); if (!b) return;
@@ -1190,6 +1218,59 @@ function cmpHTML(onlyDiff, gi = 0, leagues = null){
   return h;
 }
 function renderCmp(){ const el = document.getElementById('cmpTable'); if (el) el.innerHTML = cmpHTML(); renderSummary(); }
+
+// ───────── ⑦ 移行表 ─────────
+let mvCase = null;
+function renderMove(){
+  const box = document.getElementById('mvBody'); if (!box) return;
+  const g = BOUNDARY_PRESETS[0];
+  const curIdx = g.items.findIndex(it => S.methods.AB.w === it.set.w);
+  const idx = mvCase === null ? Math.max(0, curIdx) : mvCase;
+  document.getElementById('mvCases').innerHTML = g.items.map((it, i) =>
+    `<button type="button" data-mv="${i}" class="${i === idx ? 'on' : ''}">${esc(it.title)}${it.sub ? `（${esc(it.sub)}）` : ''}${i === curIdx ? ' ✓' : ''}</button>`).join('');
+  const inp = JSON.parse(JSON.stringify(S)); Object.assign(inp.methods.AB, g.items[idx].set);
+  const R = simulate(inp);
+  // 来年度のリーグ内の並び → 番号
+  const slot = {};
+  for (const L of ['A','B','C']){
+    const items = [];
+    R.teams.filter(t => t.dest === L).forEach(t => items.push({ ix:t.ix, t }));
+    R.pos.filter(p => p.b[0] === L || p.b[1] === L).forEach(p => items.push({ ix:p.upper.ix, po:p }));
+    items.sort((a, b) => a.ix - b.ix).forEach((it, i) => {
+      const key = it.t ? it.t.name : 'PO' + it.po.id;
+      slot[L + ':' + key] = i + 1;
+    });
+  }
+  const dest = t => {
+    if (t.dest === 'OUT') return { txt:'不参加', cls:'OUT' };
+    if (t.dest === 'K') return { txt:'関東2部', cls:'K' };
+    if (t.dest === 'D') return { txt:'県D', cls:'D' };
+    if (t.dest === 'PO'){
+      const p = t.po, U = p.b[0], Lo = p.b[1];
+      const a = U + (slot[U + ':PO' + p.id] || ''), b = Lo === 'D' ? 'D' : Lo + (slot[Lo + ':PO' + p.id] || '');
+      const o = p.upper === t ? p.lower : p.upper;
+      return { txt:`${a} or ${b}`, cls:'PO', sub:`対 ${o.name}` };
+    }
+    return { txt:t.dest + slot[t.dest + ':' + t.name], cls:t.dest };
+  };
+  const row = (rk, t) => { const d = dest(t); return `<tr><td>${esc(rk)}</td><td title="${esc(t.name)}">${esc(t.name)}</td><td class="to d-${d.cls}">${esc(d.txt)}${d.sub ? `<small>${esc(d.sub)}</small>` : ''}</td></tr>`; };
+  const head = `<thead><tr><th>${S.year}年終了</th><th>チーム</th><th>${+S.year + 1}年開始</th></tr></thead>`;
+  const tbl = (gid, n) => {
+    const ts = R.teams.filter(t => t.group === gid).sort((a, b) => a.rank - b.rank);
+    let rows = ts.map(t => row(originLabel(t), t)).join('');
+    for (let i = ts.length; i < n; i++) rows += '<tr><td>・</td><td></td><td class="to d-D">県D</td></tr>';
+    return `<table class="mv">${head}<tbody>${rows}</tbody></table>`;
+  };
+  const kd = R.teams.filter(t => t.kanto);
+  const kTbl = kd.length ? `<table class="mv mv-kanto">${head}<tbody>${kd.map(t => row('関東2部', t)).join('')}</tbody></table>` : '';
+  box.innerHTML = `<div class="mv-title">関東リーグ${R.k}チーム県リーグ降格Ver.　／　${esc(g.items[idx].title)}${g.items[idx].sub ? `（${esc(g.items[idx].sub)}）` : ''}</div>
+    <div class="mv-wrap">${kTbl}<div class="mv-grid">${tbl('A',8)}${tbl('B',8)}${tbl('Cu',8)}${tbl('Cl',8)}${tbl('D1',8)}${tbl('D2',8)}</div></div>`;
+}
+document.getElementById('mvCases').addEventListener('click', e => {
+  const b = e.target.closest('button[data-mv]'); if (!b) return;
+  mvCase = +b.dataset.mv; renderMove();
+});
+
 function renderSummary(){
   const el = document.getElementById('sumBody'); if (!el || !lastResult) return;
   const out = lastResult.teams.filter(t => t.status === 'absent').sort((a, b) => a.ix - b.ix);
