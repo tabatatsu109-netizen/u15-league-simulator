@@ -198,7 +198,8 @@ table.cmp th.on{background:var(--accent);color:var(--bg)}
 .mv-title{font-size:20px;font-weight:800;margin:0 0 8px}
 :root{ --mvA:#fbe2d5; --mvB:#dceaf7; --mvC:#c6e0b4; --mvPO:#ffff00; --mvOUT:#ff0000; --mvHead:#7f7f7f; --mvLine:#1d2430; --mvCell:#ffffff; --mvInk:#1d2430; --mvArrow:#4472c4; }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --mvCell:#f4f6f9; } }
-.mv-wrap{overflow-x:auto;position:relative;padding-bottom:6px}
+.mv-wrap{overflow:hidden;position:relative;padding-bottom:6px}
+.mv-board{transform-origin:0 0}
 .mv-board{position:relative;display:grid;grid-template-columns:auto auto auto auto;grid-template-rows:auto auto;column-gap:22px;align-items:start;width:max-content;color:var(--mvInk)}
 .mv-board .k{grid-column:1;grid-row:1}
 .mv-board .c1{grid-column:1;grid-row:2}.mv-board .c2{grid-column:2;grid-row:2}.mv-board .c3{grid-column:3;grid-row:2;display:flex}.mv-board .c4{grid-column:4;grid-row:2;margin-left:16px}
@@ -1296,6 +1297,9 @@ function renderMove(){
 }
 function drawMoveArrows(){
   const board = document.getElementById('mvBoard'), svg = document.getElementById('mvSvg'); if (!board || !svg) return;
+  const wrap = board.parentElement;
+  board.style.transform = 'none'; wrap.style.height = '';
+  if (!wrap.clientWidth) return;   // タブが隠れているとき
   const br = board.getBoundingClientRect();
   svg.setAttribute('width', br.width); svg.setAttribute('height', br.height);
   const col = getComputedStyle(document.documentElement).getPropertyValue('--mvArrow').trim() || '#4472c4';
@@ -1326,6 +1330,10 @@ function drawMoveArrows(){
     }
   }
   svg.innerHTML = h;
+  // 横スクロールなしで収まるよう、全体を縮小
+  const sc = Math.min(1, (wrap.clientWidth - 2) / br.width);
+  board.style.transform = sc < 1 ? `scale(${sc})` : 'none';
+  wrap.style.height = Math.ceil(br.height * sc) + 8 + 'px';
 }
 window.addEventListener('resize', () => requestAnimationFrame(drawMoveArrows));
 document.getElementById('mvCases').addEventListener('click', e => {
