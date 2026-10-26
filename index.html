@@ -139,6 +139,12 @@ details.adv summary{cursor:pointer;color:var(--accent);font-weight:600}
 .plab.l-stay{background:#a16207} .plab.l-up{background:#2e7d32} .plab.l-po{background:#6a4c93} .plab.l-down{background:#c62828}
 .pv div{line-height:1.5}
 .pv .was{display:inline-block;margin-left:6px;font-size:11px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:0 6px;white-space:nowrap}
+.basebox{margin-top:8px;border:1px dashed var(--line);border-radius:10px;padding:8px 12px;background:var(--panel)}
+.basebox .bt{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.basebox .bl{display:flex;flex-wrap:wrap;gap:6px 16px}
+.basebox .bi{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.basebox .bv{font-size:11px;font-weight:700;border-radius:8px;padding:0 8px;color:#fff}
+.bv.b-down{background:#c62828} .bv.b-up{background:#2e7d32} .bv.b-po{background:#6a4c93} .bv.b-stay{background:#6b7280}
 .pv .none{color:var(--muted)}
 .pcard .res{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:12px}
 .pcard .res b{color:var(--t-down)}
@@ -786,20 +792,29 @@ function describe(R, U, Lo){
   }));
   return out;
 }
+function baseBox(shown, U){
+  const list = [...shown.values()].filter(t => t.base && !t.kanto && !t.isNew).sort((a, b) => a.ix - b.ix);
+  if (!list.length) return '';
+  const cls = b => b === '降格' ? 'down' : b === '昇格' ? 'up' : b.endsWith('入替戦') ? 'po' : 'stay';
+  return `<div class="basebox"><div class="bt">本来（昇降格パターン表どおり）</div><div class="bl">` +
+    list.map(t => `<span class="bi"><span class="bn">${esc(originLabel(t))} ${esc(t.name)}</span><span class="bv b-${cls(t.base)}">${esc(t.base)}</span></span>`).join('') + '</div></div>';
+}
 function renderPresets(){
   const isOn = (b, set) => Object.entries(set).every(([k, v]) => S.methods[b][k] === v || (k === 'max' && S.methods[b].w !== 'po' && S.methods[b].d !== 'po'));
   // now：この行の結果。本来と違うときだけ（本来：〇〇）を小さく出す
-  const lab = (t, now) => `${esc(originLabel(t))} ${esc(t.name)}` + (t.base && !String(now).includes(t.base) && !(now === '入替戦' && t.base.endsWith('入替戦')) ? `<span class="was">本来：${esc(t.base)}</span>` : '');
+  const lab = (t, now) => `${esc(originLabel(t))} ${esc(t.name)}`;
   const row = (cls, label, items, emptyText) =>
     `<div class="prow"><span class="plab l-${cls}">${label}</span><div class="pv">${items.length ? items.map(x => `<div>${x}</div>`).join('') : `<div class="none">${emptyText}</div>`}</div></div>`;
   let html = '';
   BOUNDARY_PRESETS.forEach((grp, gi) => {
     const U = grp.b[0], Lo = grp.b[1];
     const sims = grp.items.map(it => { const inp = JSON.parse(JSON.stringify(S)); Object.assign(inp.methods[grp.b], it.set); return simulate(inp); });
+    const shown = new Map();
     const gap = sims[0].events.filter(e => !e.out && e.L === U).reduce((a, e) => a + e.n, 0);
     html += `<div class="psec"><h3>${grp.title}の空き<small>${gap ? `空き ${gap}` : '空きなし'}</small></h3><div class="pcards">` + grp.items.map((it, i) => {
       const R = sims[i];
       const moved = R.events.filter(e => !e.out && e.L === U).flatMap(e => e.teams);
+      moved.forEach(t => shown.set(t.name, t)); R.pos.filter(p => p.b === U + Lo).forEach(p => { shown.set(p.upper.name, p.upper); shown.set(p.lower.name, p.lower); });
       const stays = moved.filter(t => t.dest === U && t.tag && t.tag.text === '繰り上げ残留').map(t => lab(t, '残留'));
       const ups = moved.filter(t => t.dest === U && t.tag && t.tag.kind === 'up').map(t => lab(t, '昇格'));
       const pos = R.pos.filter(p => p.b === U + Lo).map(p => `${lab(p.upper, '入替戦')} 対 ${lab(p.lower, '入替戦')}`);
@@ -809,7 +824,7 @@ function renderPresets(){
         <div class="tt">${esc(it.title)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}${downs.length || pos.length ? '' : '<span class="warn">降格なし</span>'}</div>
         ${stays.length ? row('stay', '残留', stays) : ''}${ups.length ? row('up', '昇格', ups) : ''}
         ${row('po', '入替戦', pos, 'なし')}${row('down', '降格', downs, 'なし')}</button>`;
-    }).join('') + '</div></div>';
+    }).join('') + '</div>' + baseBox(shown, U) + '</div>';
   });
   document.getElementById('presets').innerHTML = html;
 }
