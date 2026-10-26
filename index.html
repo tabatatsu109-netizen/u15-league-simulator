@@ -151,6 +151,39 @@ details.adv summary{cursor:pointer;color:var(--accent);font-weight:600}
 .yoko th{background:var(--label);color:var(--ink);width:130px;vertical-align:top;white-space:nowrap}
 .yoko th small{display:block;font-weight:400;color:var(--muted);font-size:11px}
 .yoko td b{color:var(--ink);background:var(--adj);padding:0 2px;border-radius:2px}
+.present-btn{margin-left:auto;font:inherit;font-weight:700;border:none;border-radius:6px;padding:8px 16px;background:var(--accent);color:var(--bg);cursor:pointer}
+.cmpwrap{margin:6px 0 14px;overflow-x:auto}
+table.cmp{font-size:13px;min-width:640px}
+table.cmp th{white-space:nowrap}
+table.cmp td{white-space:nowrap}
+table.cmp td.lg{background:var(--label);font-weight:700;text-align:center}
+table.cmp td.base{color:var(--muted)}
+table.cmp td.on{outline:2px solid var(--accent);outline-offset:-2px}
+table.cmp th.on{background:var(--accent);color:var(--bg)}
+.c-up{background:var(--up);font-weight:700} .c-down{background:var(--down);font-weight:700} .c-po{background:var(--po);font-weight:700} .c-stay{background:var(--adj);font-weight:700} .c-out{background:var(--out)}
+.present{position:fixed;inset:0;z-index:50;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px))}
+.pr-top{display:flex;align-items:center;gap:16px;font-size:14px;color:var(--muted)}
+.pr-top .pr-title{font-weight:700;color:var(--accent)}
+.pr-top button,.pr-nav button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 16px;cursor:pointer}
+.pr-top button{margin-left:auto}
+.pr-body{flex:1;overflow:auto;padding:16px 0;font-size:clamp(16px,2vw,22px)}
+.pr-body h2{font-size:clamp(24px,3.4vw,40px);margin:0 0 16px;color:var(--ink)}
+.pr-body .lead{font-size:clamp(16px,2vw,22px);color:var(--muted);margin:0 0 16px}
+.pr-nav{display:flex;justify-content:space-between}
+.pr-nav button{font-size:18px;padding:10px 24px}
+.pr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.pr-box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+.pr-box h3{margin:0 0 8px;font-size:clamp(16px,1.8vw,20px)}
+.pr-box ul{margin:0;padding-left:1.2em}
+.pr-box li{margin:4px 0}
+.pr-tag{display:inline-block;font-size:.75em;font-weight:700;color:#fff;border-radius:8px;padding:0 8px;margin-right:6px;vertical-align:.1em}
+.pr-tag.t-up{background:#2e7d32}.pr-tag.t-down{background:#c62828}.pr-tag.t-po{background:#6a4c93}.pr-tag.t-out{background:#6b7280}.pr-tag.t-k{background:#4a3f8f}
+.pr-quote{border-left:6px solid var(--accent);background:var(--panel);padding:12px 18px;margin:0 0 14px;border-radius:0 10px 10px 0}
+.pr-quote small{display:block;color:var(--muted);font-size:.7em}
+.pr-body table.cmp{font-size:clamp(14px,1.6vw,19px)}
+.pr-decide{font-size:clamp(20px,2.6vw,30px);line-height:1.7}
+.pr-decide li{margin:8px 0}
 .pv .none{color:var(--muted)}
 .pcard .res{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:12px}
 .pcard .res b{color:var(--t-down)}
@@ -226,6 +259,7 @@ details.adv summary{cursor:pointer;color:var(--accent);font-weight:600}
     <button data-tab="po">④ 入替戦</button>
     <button data-tab="compare">⑤ 案の比較</button>
     <button data-tab="survey">⑥ 希望調査</button>
+    <button type="button" class="present-btn" id="btnPresent">▶ 説明モード</button>
   </div>
 
   <!-- ① 条件 -->
@@ -244,6 +278,7 @@ details.adv summary{cursor:pointer;color:var(--accent);font-weight:600}
         </table>
         <p class="hint">要項は「降格するはずのチームを、上の順位から残す」が基本です。案1〜案3のように要項の文言と違う埋め方は、「想定外のケースは3種運営部会で決定」によって決めることになります。</p>
       </details>
+      <div class="cmpwrap"><h3 style="margin:4px 0 6px">案の比較表<small class="hint" style="font-weight:400;margin-left:6px">色付きのマス＝本来（パターン表どおり）と変わるところ</small></h3><div id="cmpTable"></div></div>
       <div id="presets"></div>
       <details class="adv"><summary>経過を見る</summary><ul class="events" id="events"></ul></details>
       <details class="adv">
@@ -367,6 +402,11 @@ details.adv summary{cursor:pointer;color:var(--accent);font-weight:600}
     </div>
   </section>
 </main>
+<div id="present" class="present" hidden>
+  <div class="pr-top"><span id="prCount"></span><span class="pr-title" id="prTitle"></span><button type="button" id="prClose">閉じる（Esc）</button></div>
+  <div class="pr-body" id="prBody"></div>
+  <div class="pr-nav"><button type="button" id="prPrev">← 前へ</button><button type="button" id="prNext">次へ →</button></div>
+</div>
 
 <script>
 'use strict';
@@ -789,6 +829,7 @@ function renderInputs(){
     return `<tr><td>${name}</td><td>${sel('w')}</td><td>${sel('d')}</td><td><input type="number" min="0" data-b="${b}" data-k="max" value="${m.max}"></td></tr>`;
   }).join('');
   renderPresets();
+  renderCmp();
   applyYear();
   renderTeams();
 }
@@ -1093,6 +1134,100 @@ document.getElementById('svClearYes').addEventListener('click', () => {
   document.getElementById('svMsg').textContent = ''; document.getElementById('svPasteBox').open = true; renderSurvey();
 });
 try { SV = JSON.parse(localStorage.getItem(LS_SV)); if (SV) document.getElementById('svPasteBox').open = false; } catch(e){ SV = null; }
+
+// ───────── 案の比較表・説明モード ─────────
+function caseSims(){
+  return BOUNDARY_PRESETS[0].items.map(it => { const inp = JSON.parse(JSON.stringify(S)); Object.assign(inp.methods.AB, it.set); return { it, R: simulate(inp) }; });
+}
+const outcome = t => {
+  if (!t) return { txt:'－', cls:'' };
+  if (t.dest === 'OUT') return { txt:'不参加', cls:'c-out', k:'out' };
+  if (t.dest === 'K') return { txt:'関東2部へ', cls:'c-up', k:'up' };
+  if (t.dest === 'PO') { const o = t.po.upper === t ? t.po.lower : t.po.upper; return { txt:`入替戦（対 ${o.name}）`, cls:'c-po', k:'po' }; }
+  const d = LI[t.dest] - LI[t.league];
+  return d < 0 ? { txt:`昇格（${t.dest}）`, cls:'c-up', k:'up' } : d > 0 ? { txt:`降格（${t.dest}）`, cls:'c-down', k:'down' } : { txt:'残留', cls:'c-stay', k:'stay' };
+};
+const baseCls = b => !b ? 'stay' : b.endsWith('入替戦') ? 'po' : b.includes('降格') ? 'down' : b.includes('昇格') ? 'up' : 'stay';
+function cmpHTML(onlyDiff){
+  const cs = caseSims();
+  const ref = cs[0].R.teams;
+  const rows = ref.filter(t0 => !t0.kanto && !t0.isNew && t0.status !== 'absent').filter(t0 => {
+    const outs = cs.map(c => outcome(c.R.teams.find(x => x.name === t0.name)));
+    if (onlyDiff) return new Set(outs.map(o => o.txt)).size > 1;
+    return outs.some(o => o.k !== baseCls(t0.base)) || new Set(outs.map(o => o.txt)).size > 1;
+  }).sort((a, b) => a.ix - b.ix);
+  if (!rows.length) return '<p class="hint">空き枠がないため、どの案でもパターン表どおりです。</p>';
+  const onIdx = cs.findIndex(c => c.it.set.w === S.methods.AB.w);
+  let h = `<table class="cmp"><thead><tr><th>リーグ</th><th>チーム（2026年度）</th><th>本来</th>${cs.map((c, i) => `<th class="${i === onIdx ? 'on' : ''}">${esc(c.it.title)}${c.it.sub ? `<br><small>${esc(c.it.sub)}</small>` : ''}</th>`).join('')}</tr></thead><tbody>`;
+  let lastL = '';
+  rows.forEach(t0 => {
+    const L = t0.league; const lgCell = L !== lastL ? `<td class="lg" rowspan="${rows.filter(r => r.league === L).length}">${LNAME[L]}</td>` : ''; lastL = L;
+    const bk = baseCls(t0.base);
+    h += `<tr>${lgCell}<td>${esc(originLabel(t0))} ${esc(t0.name)}</td><td class="base">${esc(t0.base)}</td>` +
+      cs.map((c, i) => { const o = outcome(c.R.teams.find(x => x.name === t0.name)); const changed = o.k !== bk; return `<td class="${changed ? o.cls : ''}${i === onIdx ? ' on' : ''}">${esc(o.txt)}</td>`; }).join('') + '</tr>';
+  });
+  h += '</tbody><tfoot><tr><td colspan="3">12月の入替戦</td>' + cs.map(c => `<td>${c.R.pos.length}試合</td>`).join('') + '</tr></tfoot></table>';
+  return h;
+}
+function renderCmp(){ const el = document.getElementById('cmpTable'); if (el) el.innerHTML = cmpHTML(); }
+
+let prI = 0;
+function slides(){
+  const R = lastResult; const y = S.year, y1 = +S.year + 1;
+  const tag = (k, t) => `<span class="pr-tag t-${k}">${t}</span>`;
+  const by = (f) => R.teams.filter(f).sort((a, b) => a.ix - b.ix);
+  const nm = t => `${esc(originLabel(t))} ${esc(t.name)}`;
+  // 1 結果（パターン表どおり）
+  const kDown = by(t => t.kanto), kUp = by(t => t.base === '関東2部へ昇格'), out = by(t => t.status === 'absent');
+  const boxes = [['A','B'],['B','C'],['C','D']].map(([U, Lo]) => {
+    const up = by(t => t.league === Lo && t.base === '昇格' && !t.isNew && (Lo !== 'D' || t.group === 'D1' || t.group === 'D2'));
+    const dn = by(t => t.league === U && t.base === '降格');
+    const po = by(t => (t.league === U || t.league === Lo) && t.base.endsWith('入替戦'));
+    return `<div class="pr-box"><h3>${LNAME[U]} ↔ ${LNAME[Lo]}</h3><ul>${up.map(t => `<li>${tag('up','昇格')}${nm(t)}</li>`).join('')}${po.map(t => `<li>${tag('po','入替戦')}${nm(t)}</li>`).join('')}${dn.map(t => `<li>${tag('down','降格')}${nm(t)}</li>`).join('')}</ul></div>`;
+  }).join('');
+  const s1 = `<h2>${y}年度の結果（昇降格パターン表どおりの場合）</h2><p class="lead">関東2部から降格 ${R.k}チーム → 「関東${R.k}チーム降格Ver.」を使います。</p>
+    <div class="pr-grid"><div class="pr-box"><h3>関東2部</h3><ul>${kUp.map(t => `<li>${tag('up','関東へ')}${nm(t)}</li>`).join('')}${kDown.map(t => `<li>${tag('k','関東から')}${esc(t.name)}</li>`).join('')}</ul></div>${boxes}</div>`;
+  // 2 困っていること
+  const gaps = R.events.filter(e => !e.out && e.method !== 'surplus');
+  const gl = {}; gaps.forEach(e => { gl[e.L] = (gl[e.L] || 0) + e.n; });
+  const s2 = `<h2>このままでは定員がそろいません</h2>
+    <div class="pr-grid"><div class="pr-box"><h3>${y1}年度に参加しないチーム</h3><ul>${out.map(t => `<li>${tag('out','不参加')}${nm(t)}</li>`).join('') || '<li>なし</li>'}</ul></div>
+    <div class="pr-box"><h3>空きができるリーグ</h3><ul>${Object.entries(gl).map(([L, n]) => `<li><b>${LNAME[L]}リーグ</b>：空き ${n}（定員 ${R.cap[L]}）</li>`).join('') || '<li>なし</li>'}</ul></div></div>
+    <p class="lead" style="margin-top:16px">この空きを、どのチームで埋めるかを決める必要があります。</p>`;
+  // 3 要項
+  const s3 = `<h2>要項にはこう書いてあります</h2>
+    <div class="pr-quote"><small>13(3)3) 脱退</small>新規リーグスタート前に脱退チームが出た場合は、<b>降格チームの上位を残留</b>とする。降格チームがない場合は、昇格チームを増やす。</div>
+    <div class="pr-quote"><small>13(3)3) 昇格辞退</small><b>上位リーグの降格チーム</b>で「繰り上げ残留希望」の<b>成績上位</b>のチームが残留する。</div>
+    <div class="pr-quote"><small>13(3)2)</small>想定外のケースが出た場合は、<b>3種運営部会において決定</b>する。</div>
+    <p class="lead">要項の文言どおりだと、Aからの降格がなくなります。そのため、案1〜案3を用意しました。</p>`;
+  // 4 比較
+  const s4 = `<h2>Aリーグの空きの埋め方：案の比較</h2><p class="lead">色付きのマスが、本来（パターン表どおり）と変わるところです。</p><div style="overflow-x:auto">${cmpHTML(true)}</div><p class="lead" style="margin-top:12px">B・Cの埋め方はどの案でも同じです（②条件の表で確認できます）。</p>`;
+  // 5 決めること
+  const cur = BOUNDARY_PRESETS.map(g => { const it = g.items.find(it => Object.entries(it.set).every(([k, v]) => S.methods[g.b][k] === v || (k === 'max' && S.methods[g.b].w !== 'po' && S.methods[g.b].d !== 'po'))); return `${g.title}：${it ? it.title + (it.sub ? `（${it.sub}）` : '') : '個別設定'}`; });
+  const s5 = `<h2>今日決めること</h2><ol class="pr-decide">
+    <li>Aリーグの空きを <b>要項どおり／案1／案2／案3</b> のどれで埋めるか</li>
+    <li>B・Cの空きの埋め方（今の設定：${esc(cur[1])}、${esc(cur[2])}）</li>
+    <li>12月5日の入替戦（今の設定で <b>${R.pos.length}試合</b>）</li></ol>`;
+  return [['結果', s1], ['空き', s2], ['要項', s3], ['比較', s4], ['決めること', s5]];
+}
+function showSlide(){
+  const sl = slides(); prI = Math.max(0, Math.min(prI, sl.length - 1));
+  document.getElementById('prBody').innerHTML = sl[prI][1];
+  document.getElementById('prTitle').textContent = sl[prI][0];
+  document.getElementById('prCount').textContent = `${prI + 1} / ${sl.length}`;
+  document.getElementById('prPrev').disabled = prI === 0;
+  document.getElementById('prNext').disabled = prI === sl.length - 1;
+}
+document.getElementById('btnPresent').addEventListener('click', () => { prI = 0; document.getElementById('present').hidden = false; showSlide(); });
+document.getElementById('prClose').addEventListener('click', () => { document.getElementById('present').hidden = true; });
+document.getElementById('prPrev').addEventListener('click', () => { prI--; showSlide(); });
+document.getElementById('prNext').addEventListener('click', () => { prI++; showSlide(); });
+document.addEventListener('keydown', e => {
+  if (document.getElementById('present').hidden) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); prI++; showSlide(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prI--; showSlide(); }
+  else if (e.key === 'Escape') document.getElementById('present').hidden = true;
+});
 
 load(); renderInputs(); render(); renderSurvey();
 </script>
