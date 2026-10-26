@@ -499,14 +499,12 @@ const MNAME = Object.fromEntries(METHODS);
 // 境目ごとの「案」カード（set の中身を S.methods[境目] に入れる）
 const BOUNDARY_PRESETS = [
   { b:'AB', title:'Aリーグ', items:[
-    { title:'要項の文言どおり', set:{ w:'yoko' } },
     { title:'案1', sub:'入替戦なし', set:{ w:'cancelPO' } },
     { title:'案2', sub:'A8位が入替戦', set:{ w:'downPO' } },
     { title:'案3', sub:'B3位が入替戦', set:{ w:'shiftUp' } },
   ]},
   { b:'BC', title:'Bリーグ', items:[
     { title:'残す＋上げる', set:{ w:'yoko', d:'promote' } },
-    { title:'要項の文言どおり', sub:'全部残す', set:{ w:'yoko', d:'yoko' } },
     { title:'Cから上げる', set:{ w:'promote', d:'promote' } },
     { title:'入替戦', set:{ w:'po', d:'po', max:2 } },
   ]},
@@ -552,6 +550,9 @@ function load(){
     delete S.kanto;
   }
   if (!S.year) S.year = 2026;
+  // 「要項の文言どおり」（降格ゼロになる案）は廃止：残っていれば最初の設定に戻す
+  if (S.methods.AB.w === 'yoko') S.methods.AB.w = 'cancelPO';
+  if (S.methods.BC.w === 'yoko' && S.methods.BC.d === 'yoko') S.methods.BC.d = 'promote';
   if (!S.poInfo) S.poInfo = null;
   try { scenarios = JSON.parse(localStorage.getItem(LS_SC)) || []; } catch(e){ scenarios = []; }
 }
