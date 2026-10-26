@@ -795,7 +795,7 @@ function renderPresets(){
       const moved = R.events.filter(e => !e.out && e.L === U).flatMap(e => e.teams);
       const stays = moved.filter(t => t.dest === U && t.tag && t.tag.text === '繰り上げ残留').map(lab);
       const ups = moved.filter(t => t.dest === U && t.tag && t.tag.kind === 'up').map(lab);
-      const pos = R.pos.filter(p => p.b === U + Lo).map(p => `${originLabel(p.upper)} 対 ${originLabel(p.lower)}`);
+      const pos = R.pos.filter(p => p.b === U + Lo).map(p => `${lab(p.upper)} 対 ${lab(p.lower)}`);
       const downs = R.teams.filter(t => t.league === U && t.dest === Lo && !t.isNew).sort((a, b) => a.ix - b.ix).map(lab);
       const on = isOn(grp.b, it.set);
       return `<button class="pcard${on ? ' on' : ''}" data-g="${gi}" data-i="${i}">${on ? '<span class="sel">✓ 選択中</span>' : ''}
