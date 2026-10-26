@@ -1264,7 +1264,7 @@ function renderMove(){
   const kd = R.teams.filter(t => t.kanto);
   const kTbl = kd.length ? `<table class="mv mv-kanto">${head}<tbody>${kd.map(t => row('関東2部', t)).join('')}</tbody></table>` : '';
   box.innerHTML = `<div class="mv-title">関東リーグ${R.k}チーム県リーグ降格Ver.　／　${esc(g.items[idx].title)}${g.items[idx].sub ? `（${esc(g.items[idx].sub)}）` : ''}</div>
-    <div class="mv-wrap">${kTbl}<div class="mv-grid">${tbl('A',8)}${tbl('B',8)}${tbl('Cu',8)}${tbl('Cl',8)}${tbl('D1',8)}${tbl('D2',8)}</div></div>`;
+    <div class="mv-wrap">${kTbl}<div class="mv-grid">${tbl('A',8)}${tbl('B',8)}${tbl('Cu',8)}${tbl('Cl',8)}${tbl('D1',8)}${tbl('D2',8)}</div></div>` + baseBox(new Map(R.teams.filter(t => t.status !== 'absent' && !t.kanto && !t.isNew && outcome(t).k !== baseCls(t.base)).map(t => [t.name, t])), '');
 }
 document.getElementById('mvCases').addEventListener('click', e => {
   const b = e.target.closest('button[data-mv]'); if (!b) return;
