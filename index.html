@@ -185,6 +185,11 @@ table.cmp th.on{background:var(--accent);color:var(--bg)}
 .pr-body table.cmp{font-size:clamp(14px,1.6vw,19px)}
 .pr-decide{font-size:clamp(20px,2.6vw,30px);line-height:1.7}
 .pr-decide li{margin:8px 0}
+.sum-sec{margin:14px 0 22px}
+.sum-sec h3{margin:0 0 8px;font-size:16px;border-left:5px solid var(--accent);padding-left:8px}
+.sum-out{display:flex;flex-wrap:wrap;gap:8px}
+.sum-out span{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:15px}
+.sum-out span b{display:inline-block;font-size:11px;color:#fff;background:#6b7280;border-radius:8px;padding:0 8px;margin-right:8px}
 .pv .none{color:var(--muted)}
 .pcard .res{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:12px}
 .pcard .res b{color:var(--t-down)}
@@ -241,6 +246,7 @@ table.cmp th.on{background:var(--accent);color:var(--bg)}
 }
 @media print{
   header,.tabs,.noprint,#tab-input,#tab-teams,#tab-po,#tab-compare,#tab-survey{display:none!important}
+  #tab-summary{display:block!important}
   #tab-result{display:block!important}
   body{background:#fff;color:#000}
   .card{border:none;padding:0}
@@ -259,7 +265,8 @@ table.cmp th.on{background:var(--accent);color:var(--bg)}
     <button data-tab="result">③ <span class="y1"></span>年度構造図</button>
     <button data-tab="po">④ 入替戦</button>
     <button data-tab="compare">⑤ 案の比較</button>
-    <button data-tab="survey">⑥ 希望調査</button>
+    <button data-tab="summary">⑥ 概要</button>
+    <button data-tab="survey">⑦ 希望調査</button>
     <button type="button" class="present-btn" id="btnPresent">▶ 説明モード</button>
   </div>
 
@@ -379,7 +386,16 @@ table.cmp th.on{background:var(--accent);color:var(--bg)}
     </div>
   </section>
 
-  <!-- ⑥ 希望調査 -->
+  <!-- ⑥ 概要 -->
+  <section id="tab-summary" class="hide">
+    <div class="card">
+      <h2><span class="y1"></span>年度に向けた概要</h2>
+      <p class="hint">色付きのマス＝本来（昇降格パターン表どおり）と変わるところ。枠で囲んだ列＝②条件で今選んでいる案です。</p>
+      <div id="sumBody"></div>
+    </div>
+  </section>
+
+  <!-- ⑦ 希望調査 -->
   <section id="tab-survey" class="hide">
     <div class="card">
       <h2>希望調査の結果</h2>
@@ -765,6 +781,7 @@ function render(){
   document.getElementById('moves').innerHTML = teams.filter(t => t.reasons.length || t.dest !== t.league)
     .map(t => `<tr><td>${esc(t.name)}</td><td>${esc(originLabel(t))}</td><td class="${kindClass(t)}">${esc(destLabel(t))}</td><td>${esc(t.reasons.join(' → ') || '')}</td></tr>`).join('');
   renderCompare();
+  renderSummary();
 }
 function kindClass(t){ return t.tag ? 'k-' + t.tag.kind : ''; }
 function renderEvents(R){
@@ -939,7 +956,7 @@ function renderCompare(){
 document.getElementById('tabs').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
-  ['input','teams','result','po','compare','survey'].forEach(t => document.getElementById('tab-'+t).classList.toggle('hide', t !== b.dataset.tab));
+  ['input','teams','result','po','compare','summary','survey'].forEach(t => document.getElementById('tab-'+t).classList.toggle('hide', t !== b.dataset.tab));
 });
 document.getElementById('presets').addEventListener('click', e => {
   const b = e.target.closest('button.pcard'); if (!b) return;
@@ -1137,8 +1154,9 @@ document.getElementById('svClearYes').addEventListener('click', () => {
 try { SV = JSON.parse(localStorage.getItem(LS_SV)); if (SV) document.getElementById('svPasteBox').open = false; } catch(e){ SV = null; }
 
 // ───────── 案の比較表・説明モード ─────────
-function caseSims(){
-  return BOUNDARY_PRESETS[0].items.map(it => { const inp = JSON.parse(JSON.stringify(S)); Object.assign(inp.methods.AB, it.set); return { it, R: simulate(inp) }; });
+function caseSims(gi = 0){
+  const g = BOUNDARY_PRESETS[gi];
+  return g.items.map(it => { const inp = JSON.parse(JSON.stringify(S)); Object.assign(inp.methods[g.b], it.set); return { it, R: simulate(inp) }; });
 }
 const outcome = t => {
   if (!t) return { txt:'－', cls:'' };
@@ -1149,16 +1167,17 @@ const outcome = t => {
   return d < 0 ? { txt:`昇格（${t.dest}）`, cls:'c-up', k:'up' } : d > 0 ? { txt:`降格（${t.dest}）`, cls:'c-down', k:'down' } : { txt:'残留', cls:'c-stay', k:'stay' };
 };
 const baseCls = b => !b ? 'stay' : b.endsWith('入替戦') ? 'po' : b.includes('降格') ? 'down' : b.includes('昇格') ? 'up' : 'stay';
-function cmpHTML(onlyDiff){
-  const cs = caseSims();
+function cmpHTML(onlyDiff, gi = 0, leagues = null){
+  const g = BOUNDARY_PRESETS[gi];
+  const cs = caseSims(gi);
   const ref = cs[0].R.teams;
-  const rows = ref.filter(t0 => !t0.kanto && !t0.isNew && t0.status !== 'absent').filter(t0 => {
+  const rows = ref.filter(t0 => !t0.kanto && !t0.isNew && t0.status !== 'absent' && (!leagues || leagues.includes(t0.league))).filter(t0 => {
     const outs = cs.map(c => outcome(c.R.teams.find(x => x.name === t0.name)));
     if (onlyDiff) return new Set(outs.map(o => o.txt)).size > 1;
     return outs.some(o => o.k !== baseCls(t0.base)) || new Set(outs.map(o => o.txt)).size > 1;
   }).sort((a, b) => a.ix - b.ix);
   if (!rows.length) return '<p class="hint">空き枠がないため、どの案でもパターン表どおりです。</p>';
-  const onIdx = cs.findIndex(c => c.it.set.w === S.methods.AB.w);
+  const onIdx = cs.findIndex(c => Object.entries(c.it.set).every(([k, v]) => S.methods[g.b][k] === v || (k === 'max' && S.methods[g.b].w !== 'po' && S.methods[g.b].d !== 'po')));
   let h = `<table class="cmp"><thead><tr><th>リーグ</th><th>チーム（2026年度）</th><th>本来</th>${cs.map((c, i) => `<th class="${i === onIdx ? 'on' : ''}">${esc(c.it.title)}${c.it.sub ? `<br><small>${esc(c.it.sub)}</small>` : ''}</th>`).join('')}</tr></thead><tbody>`;
   let lastL = '';
   rows.forEach(t0 => {
@@ -1167,10 +1186,23 @@ function cmpHTML(onlyDiff){
     h += `<tr>${lgCell}<td>${esc(originLabel(t0))} ${esc(t0.name)}</td><td class="base">${esc(t0.base)}</td>` +
       cs.map((c, i) => { const o = outcome(c.R.teams.find(x => x.name === t0.name)); const changed = o.k !== bk; return `<td class="${changed ? o.cls : ''}${i === onIdx ? ' on' : ''}">${esc(o.txt)}</td>`; }).join('') + '</tr>';
   });
-  h += '</tbody><tfoot><tr><td colspan="3">12月の入替戦</td>' + cs.map(c => `<td>${c.R.pos.length}試合</td>`).join('') + '</tr></tfoot></table>';
+  h += `</tbody><tfoot><tr><td colspan="3">12月の入替戦（${LNAME[g.b[0]]}↔${LNAME[g.b[1]]}）</td>` + cs.map(c => `<td>${c.R.pos.filter(p => p.b === g.b).length}試合</td>`).join('') + '</tr></tfoot></table>';
   return h;
 }
-function renderCmp(){ const el = document.getElementById('cmpTable'); if (el) el.innerHTML = cmpHTML(); }
+function renderCmp(){ const el = document.getElementById('cmpTable'); if (el) el.innerHTML = cmpHTML(); renderSummary(); }
+function renderSummary(){
+  const el = document.getElementById('sumBody'); if (!el || !lastResult) return;
+  const out = lastResult.teams.filter(t => t.status === 'absent').sort((a, b) => a.ix - b.ix);
+  const kUp = lastResult.teams.filter(t => t.dest === 'K'), kDown = lastResult.teams.filter(t => t.kanto);
+  el.innerHTML =
+    `<div class="sum-sec"><h3>${+S.year + 1}年度に参加しないチーム（現時点で確定）</h3><div class="sum-out">` +
+      (out.map(t => `<span><b>不参加</b>${esc(originLabel(t))} ${esc(t.name)}</span>`).join('') || '<span>なし</span>') +
+      `</div><p class="hint">関東2部へ：${esc(kUp.map(t => t.name).join('、') || 'なし')}　／　関東2部から：${esc(kDown.map(t => t.name).join('、') || 'なし')}（関東${lastResult.k}チーム降格Ver.）</p></div>` +
+    `<div class="sum-sec"><h3>Aリーグ／Bリーグの昇降格</h3><div style="overflow-x:auto">${cmpHTML(true, 0, ['A','B'])}</div></div>` +
+    `<div class="sum-sec"><h3>Bリーグ／Cリーグの昇降格</h3><div style="overflow-x:auto">${cmpHTML(true, 1, ['B','C'])}</div>
+      <p class="hint">Aリーグの埋め方は、②条件で今選んでいる案のままで比べています。</p></div>`;
+}
+
 
 let prI = 0;
 function slides(){
