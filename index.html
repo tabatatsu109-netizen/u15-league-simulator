@@ -349,6 +349,9 @@ svg.mv-arrows{position:absolute;left:0;top:0;pointer-events:none;overflow:visibl
         <p class="hint">要項は「降格するはずのチームを、上の順位から残す」が基本です。案1〜案3のように要項の文言と違う埋め方は、「想定外のケースは3種運営部会で決定」によって決めることになります。</p>
       </details>
       <div class="cmpwrap" hidden><h3 style="margin:4px 0 6px">案の比較表<small class="hint" style="font-weight:400;margin-left:6px">色付きのマス＝本来（パターン表どおり）と変わるところ</small></h3><div id="cmpTable"></div></div>
+      <div class="row" style="margin:4px 0 10px"><label class="f">昇降格パターン表
+        <select id="patMode"><option value="auto">年度で自動（2026年度＝4月提案版／2027年度〜＝2027要項版）</option><option value="old">4月提案版</option><option value="new">2027要項版（入替戦を増やす）</option></select></label>
+        <span class="hint" id="patNow"></span></div>
       <div id="presets"></div>
       <details class="adv"><summary>経過を見る</summary><ul class="events" id="events"></ul></details>
       <details class="adv">
@@ -527,6 +530,14 @@ const PAT = {
   2:{ A:['K','A','A','A','A','pAB','B','B'],   B:['A','pAB','B','B','B','C','C','C'],     Cu:['B','B'],        Cl:['C','C','C','D','D','D','D','D'], D:['C','C'] },
   3:{ A:['K','A','A','A','pAB','B','B','B'],   B:['A','pAB','B','B','C','C','C','C'],     Cu:['B','B'],        Cl:['C','C','C','D','D','D','D','D'], D:['C','pCD'] },
 };
+// 2027年度要項版（委員長案：入替戦を増やす）。2027年度終了時（2028年度へ）から使う
+const PAT_NEW = {
+  0:{ A:['K','A','A','A','A','A','pAB','B'],   B:['A','A','pAB','B','B','B','pBC','pBC'],  Cu:['B','pBC','pBC'], Cl:['C','C','C','pCD','pCD','D','D','D'], D:['C','C','pCD'] },
+  1:{ A:['K','A','A','A','A','A','pAB','B'],   B:['A','pAB','B','B','B','B','pBC','pBC'],  Cu:['pBC','pBC'],     Cl:['C','C','C','C','D','D','D','D'],     D:['C','C'] },
+  2:{ A:['K','A','A','A','A','pAB','B','B'],   B:['A','pAB','B','B','B','B','pBC','C'],    Cu:['pBC'],           Cl:['C','C','C','D','D','D','D','D'],     D:['C','C'] },
+  3:{ A:['K','A','A','A','pAB','pAB','B','B'], B:['pAB','pAB','B','B','pBC','pBC','C','C'], Cu:['pBC','pBC'],    Cl:['C','C','C','D','D','D','D','D'],     D:['C','pCD'] },
+};
+const useNewPat = input => input.patMode === 'new' || (input.patMode !== 'old' && +input.year >= 2027);
 const PAT_DEFAULT = { A:'B', B:'C', Cu:'C', Cl:'D', D:'D' };
 const LEAGUES = ['A','B','C','D'];
 const LI = { K:-1, A:0, B:1, C:2, D:3 };
@@ -579,6 +590,7 @@ function defaultState(){
     groups: DEFAULT_GROUPS.map(g => ({ id:g.id, teams:g.teams.map(n => ({ name:n, status:DEFAULT_STATUS[n] || 'normal' })) })),
     year: 2026,
     poInfo: null,
+    patMode: 'auto',
     kantoTeams: JSON.parse(JSON.stringify(DEFAULT_KANTO)),
     newTeams: [],
     cap: { A:8, B:8, C:16 },
@@ -600,6 +612,7 @@ function load(){
   if (S.methods.AB.w === 'yoko') S.methods.AB.w = 'cancelPO';
   if (S.methods.BC.w === 'yoko' && S.methods.BC.d === 'yoko') S.methods.BC.d = 'promote';
   if (!S.poInfo) S.poInfo = null;
+  if (!S.patMode) S.patMode = 'auto';
   try { scenarios = JSON.parse(localStorage.getItem(LS_SC)) || []; } catch(e){ scenarios = []; }
 }
 function save(){ try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e){} }
@@ -634,7 +647,7 @@ function simulate(input){
   teams.forEach(t => { t.reasons = []; t.tag = null; t.po = null; });
 
   const k = Math.min(3, kantoNames.length);
-  const pat = PAT[k];
+  const pat = (useNewPat(input) ? PAT_NEW : PAT)[k];
   const events = []; let cur = null;
   const tag = (t, kind, text, why) => { t.tag = { kind, text }; t.reasons.push(why ? `${text}（${why}）` : text); if (cur && !cur.includes(t)) cur.push(t); };
 
@@ -922,6 +935,8 @@ function renderInputs(){
     const sel = (key) => `<select data-b="${b}" data-k="${key}">${METHODS.map(([v,l]) => `<option value="${v}"${m[key] === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
     return `<tr><td>${name}</td><td>${sel('w')}</td><td>${sel('d')}</td><td><input type="number" min="0" data-b="${b}" data-k="max" value="${m.max}"></td></tr>`;
   }).join('');
+  document.getElementById('patMode').value = S.patMode;
+  document.getElementById('patNow').textContent = '今の設定：' + (useNewPat(S) ? '2027要項版' : '4月提案版');
   renderPresets();
   renderCmp();
   applyYear();
@@ -1046,7 +1061,8 @@ document.getElementById('poInfo').addEventListener('change', e => {
   if (!S.poInfo) S.poInfo = PO_INFO_DEFAULT(S.year);
   S.poInfo[+i][1] = e.target.value; save();
 });
-document.getElementById('year').addEventListener('change', e => { const v = parseInt(e.target.value,10); if (v > 2000){ S.year = v; applyYear(); render(); } });
+document.getElementById('patMode').addEventListener('change', e => { S.patMode = e.target.value; renderInputs(); render(); });
+document.getElementById('year').addEventListener('change', e => { const v = parseInt(e.target.value,10); if (v > 2000){ S.year = v; renderInputs(); render(); } });
 ['A','B','C'].forEach(L => document.getElementById('cap'+L).addEventListener('input', e => { const v = parseInt(e.target.value,10); if (v > 0){ S.cap[L] = v; render(); } }));
 document.getElementById('surplus').addEventListener('change', e => { S.surplus = e.target.value; render(); });
 document.getElementById('methodTable').addEventListener('change', e => {
